@@ -1,6 +1,18 @@
 import { clone, Contract, Global, log, uint64 } from "@algorandfoundation/algorand-typescript";
-import { PoolInfo, Reti, ValidatorConfig, ValidatorCurState } from "../reti/contract.algo";
-import { abimethod, Address, compileArc4, encodeArc4, StaticArray, Uint16, Uint32, Uint64, Uint8 } from "@algorandfoundation/algorand-typescript/arc4";
+import { NodeConfig, PoolInfo, ValidatorConfig, ValidatorCurState } from "../reti/types.algo";
+import {
+  abimethod,
+  Address,
+  compileArc4,
+  encodeArc4,
+  StaticArray,
+  Uint16,
+  Uint32,
+  Uint64,
+  Uint8,
+} from "@algorandfoundation/algorand-typescript/arc4";
+import { NodePoolAssignmentConfig } from "../reti/types.algo";
+import { Reti } from "../reti/contract.algo";
 
 export type ValidatorPoolInfo = {
   validatorId: uint64;
@@ -11,7 +23,7 @@ export type ValidatorPoolInfo = {
 export class RetiReader extends Contract {
   @abimethod({ readonly: true, onCreate: "allow" })
   getValidatorConfig(registryAppId: uint64, validatorIds: uint64[]): ValidatorConfig {
-    for(const validatorId of validatorIds) {
+    for (const validatorId of validatorIds) {
       const { returnValue } = compileArc4(Reti).call.getValidatorConfig({
         appId: registryAppId,
         args: [validatorId],
@@ -78,5 +90,18 @@ export class RetiReader extends Contract {
         totalAlgoStaked: 0,
       },
     };
+  }
+
+  @abimethod({ readonly: true, onCreate: "allow" })
+  getNodePoolAssignments(registryAppId: uint64, validatorIds: uint64[]): NodePoolAssignmentConfig {
+    for (const validatorId of validatorIds) {
+      const { returnValue } = compileArc4(Reti).call.getNodePoolAssignments({
+        appId: registryAppId,
+        args: [validatorId],
+      });
+      log(encodeArc4(returnValue));
+    }
+    const n = new NodeConfig({ poolAppIds: new StaticArray(new Uint64(0), new Uint64(0), new Uint64(0)) })
+    return { nodes: new StaticArray(clone(n), clone(n), clone(n), clone(n), clone(n), clone(n), clone(n), clone(n)) };
   }
 }

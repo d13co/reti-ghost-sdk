@@ -1,5 +1,5 @@
 import { AlgorandClient } from "@algorandfoundation/algokit-utils"
-import { RetiReaderSDK, ValidatorConfig, ValidatorCurState, ValidatorPoolInfo } from "./generated/RetiReaderSDK.js"
+import { NodePoolAssignmentConfig, RetiReaderSDK, ValidatorConfig, ValidatorCurState, ValidatorPoolInfo } from "./generated/RetiReaderSDK.js"
 import { chunked } from "./utils/chunked.js"
 
 export class RetiFastSDK {
@@ -44,4 +44,11 @@ export class RetiFastSDK {
     const extraFee = (1000 * validatorIds.length).microAlgo()
     return this.ghostSDK.getPools({ registryAppId: this.registryAppId, validatorIds }, { extraFee })
   }
+
+  @chunked(127)
+  async getNodePoolAssignments(validatorIds: number[] | bigint[]): Promise<NodePoolAssignmentConfig[]> {
+    const extraFee = (1000 * validatorIds.length).microAlgo()
+    return this.ghostSDK.getNodePoolAssignments({ registryAppId: this.registryAppId, validatorIds }, { extraFee })
+  }
+
 }
