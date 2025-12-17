@@ -7,7 +7,7 @@ name = 'reti-fast-sdk'
 artifacts = "src/"
 
 [project.run]
-build = { commands = ['npm run build'], description = 'Build SDK' }
+build = { commands = ['pnpm run build'], description = 'Build SDK' }
 test = { commands = [
-  'npm run test',
+  'pnpm run test',
 ], description = 'Run smart contract tests using vitest' }

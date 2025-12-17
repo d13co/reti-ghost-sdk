@@ -1,22 +1,110 @@
 # reti-fast-sdk
 
-Welcome to your new AlgoKit project!
+Fast Reti SDK that utilizes [ghost cotracts](https://github.com/d13co/ghostkit) to batch fetch data.
 
-This is your workspace root. A `workspace` in AlgoKit is an orchestrated collection of standalone projects (backends, smart contracts, frontend apps and etc).
+**Status: Experimental**
 
-By default, `projects_root_path` parameter is set to `projects`. Which instructs AlgoKit CLI to create a new directory under `projects` directory when new project is instantiated via `algokit init` at the root of the workspace.
+Methods supported:
 
-## Getting Started
+- getNumValidators
+- getValidatorConfig
+- getValidatorStates
+- getPools
+- getNodePoolAssignments
 
-To get started refer to `README.md` files in respective sub-projects in the `projects` directory.
+This mirrors the required data for reti UI's `useValidators` data fetcher. When run in parallel (see example) it fetches all data in less than 1 second.
 
-To learn more about algokit, visit [documentation](https://github.com/algorandfoundation/algokit-cli/blob/main/docs/algokit.md).
+## Installation
 
-### GitHub Codespaces
+Run at project root:
 
-To get started execute:
+```
+algokit bootstrap all
+```
 
-1. `algokit generate devcontainer` - invoking this command from the root of this repository will create a `devcontainer.json` file with all the configuration needed to run this project in a GitHub codespace. [Run the repository inside a codespace](https://docs.github.com/en/codespaces/getting-started/quickstart) to get started.
-2. `algokit init` - invoke this command inside a github codespace to launch an interactive wizard to guide you through the process of creating a new AlgoKit project
+## Build
 
-Powered by [Copier templates](https://copier.readthedocs.io/en/stable/).
+Run at project root:
+
+```
+algokit project run build
+```
+
+## Usage
+
+See `projects/sdk/src/run.ts`
+
+## Example Run
+
+```
+cd projects/sdk
+tsx src/run.ts
+```
+
+### Sample Output
+
+```
+Retrieved node pool assignments: 196
+Sample {
+  nodes: [
+    [ [Array] ],
+    [ [Array] ],
+    [ [Array] ],
+    [ [Array] ],
+    [ [Array] ],
+    [ [Array] ],
+    [ [Array] ],
+    [ [Array] ]
+  ]
+}
+  --
+Retrieved validator states: 196
+Sample {
+  numPools: 2,
+  totalStakers: 195n,
+  totalAlgoStaked: 4752507090411n,
+  rewardTokenHeldBack: 0n
+}
+  --
+Retrieved validator configs: 196
+Sample {
+  id: 1n,
+  owner: 'RSV2YCHXA7MWGFTX3WYI7TVGAS5W5XH5M7ZQVXPPRQ7DNTNW36OW2TRR6I',
+  manager: 'EP2N3CDADK7RPFWR6EE72URF5OJMSPBNKGFDPNJGGYRSDLEK6ZWSMEG5HE',
+  nfdForInfo: 2714599972n,
+  entryGatingType: 0,
+  entryGatingAddress: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ',
+  entryGatingAssets: [ 0n, 0n, 0n, 0n ],
+  gatingAssetMinBalance: 0n,
+  rewardTokenId: 0n,
+  rewardPerPayout: 0n,
+  epochRoundLength: 2592,
+  percentToValidator: 50000,
+  validatorCommissionAddress: 'RSV2YCHXA7MWGFTX3WYI7TVGAS5W5XH5M7ZQVXPPRQ7DNTNW36OW2TRR6I',
+  minEntryStake: 1000000000n,
+  maxAlgoPerPool: 0n,
+  poolsPerNode: 3,
+  sunsettingOn: 0n,
+  sunsettingTo: 0n
+}
+  --
+Retrieved pools: 196
+Samples 1 63 95 96 [
+  {
+    poolAppId: 2714622967n,
+    totalStakers: 195,
+    totalAlgoStaked: 4752507090411n
+  },
+  { poolAppId: 2726614654n, totalStakers: 0, totalAlgoStaked: 0n }
+] [] [
+  {
+    poolAppId: 2909634834n,
+    totalStakers: 127,
+    totalAlgoStaked: 2343330999007n
+  },
+  { poolAppId: 2971894622n, totalStakers: 0, totalAlgoStaked: 0n },
+  { poolAppId: 2971899422n, totalStakers: 0, totalAlgoStaked: 0n }
+] [ { poolAppId: 2910050280n, totalStakers: 0, totalAlgoStaked: 0n } ]
+  --
+run: 890.081ms
+```

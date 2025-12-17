@@ -1,14 +1,10 @@
 import { AlgorandClient } from "@algorandfoundation/algokit-utils"
 import { RetiFastSDK } from "."
 
-function stringify(obj: any): string {
-  return JSON.stringify(obj, (_key, value) => (typeof value === "bigint" ? value.toString() : value), 2)
-}
-
 const registryAppId = 2714516089
 
 const sdk = new RetiFastSDK({
-  algorand: AlgorandClient.fromEnvironment(),
+  algorand: AlgorandClient.mainNet(),
   registryAppId,
 })
 
