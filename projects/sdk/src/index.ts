@@ -4,13 +4,18 @@ import { chunked } from "./utils/chunked.js"
 
 export class RetiFastSDK {
   public algorand: AlgorandClient
-  public registryAppId: number | bigint
+  public registryAppId: bigint
   private ghostSDK: RetiReaderSDK
 
   constructor({ algorand, registryAppId }: { algorand: AlgorandClient; registryAppId: number | bigint }) {
     this.algorand = algorand
-    this.registryAppId = registryAppId
+    this.registryAppId = BigInt(registryAppId)
     this.ghostSDK = new RetiReaderSDK({ algorand: this.algorand })
+  }
+
+  async getNumValidators(): Promise<number> {
+    const { numV } = await this.algorand.app.getGlobalState(this.registryAppId)
+    return Number(numV.value)
   }
 
   @chunked(127)
