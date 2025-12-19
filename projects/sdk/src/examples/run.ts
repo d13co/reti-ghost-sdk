@@ -42,7 +42,7 @@ const sdk = new RetiGhostSDK({
     const poolAppIds = pools.flatMap((pools, index) => pools.map((poolInfo) => poolInfo.poolAppId))
     console.time("algodversions")
     const algodVersions = await sdk.getPoolAlgodVersions(poolAppIds.map((id) => Number(id)))
-    console.log(algodVersions.length)
+    console.log(algodVersions.length, algodVersions[0])
     console.timeEnd("algodversions")
     return pools
   })

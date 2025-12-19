@@ -1,4 +1,4 @@
-import { FixedArray, uint64 } from "@algorandfoundation/algorand-typescript";
+import { Account, FixedArray, uint64 } from "@algorandfoundation/algorand-typescript";
 import { Uint64, Uint8, Uint32, Uint16, Address, ARC4Encoded } from "@algorandfoundation/algorand-typescript/arc4";
 
 export const MAX_POOLS_PER_NODE = 3; // max number of pools per node
@@ -46,4 +46,13 @@ export type PoolInfo = {
   poolAppId: uint64; // The App id of this staking pool contract instance
   totalStakers: Uint16;
   totalAlgoStaked: uint64;
+};
+
+export type AssetInfo = {
+  assetId: uint64;
+  creator: Account;
+  total: uint64;
+  decimals: Uint8;
+  unitName: string;
+  name: string;
 };

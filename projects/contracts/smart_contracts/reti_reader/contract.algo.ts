@@ -1,6 +1,16 @@
-import { arc4, assert, bytes, Bytes, clone, Contract, FixedArray, Global, log, op, Txn, uint64 } from "@algorandfoundation/algorand-typescript";
-import { NodeConfig, PoolInfo, ValidatorConfig, ValidatorCurState } from "../reti/types.algo";
-import { abimethod, Address, baremethod, compileArc4, encodeArc4, Uint16, Uint32, Uint64, Uint8 } from "@algorandfoundation/algorand-typescript/arc4";
+import { assert, Asset, Bytes, clone, Contract, FixedArray, Global, log, op, Txn, uint64 } from "@algorandfoundation/algorand-typescript";
+import { AssetInfo, NodeConfig, PoolInfo, ValidatorConfig, ValidatorCurState } from "../reti/types.algo";
+import {
+  abimethod,
+  Address,
+  baremethod,
+  compileArc4,
+  encodeArc4,
+  Uint16,
+  Uint32,
+  Uint64,
+  Uint8,
+} from "@algorandfoundation/algorand-typescript/arc4";
 import { NodePoolAssignmentConfig } from "../reti/types.algo";
 import { Reti } from "../reti/contract.algo";
 
@@ -9,7 +19,7 @@ export type ValidatorPoolInfo = {
   poolInfo: PoolInfo;
 };
 
-export type AllPoolInfo = {
+export type Validator = {
   config: ValidatorConfig;
   state: ValidatorCurState;
   poolInfo: PoolInfo[];
@@ -138,7 +148,7 @@ export class RetiReader extends Contract {
   }
 
   @abimethod({ readonly: true, onCreate: "allow" })
-  getAllPoolInfo(registryAppId: uint64, validatorIds: uint64[]): AllPoolInfo {
+  getValidators(registryAppId: uint64, validatorIds: uint64[]): Validator {
     for (const validatorId of validatorIds) {
       const reti = compileArc4(Reti);
 
@@ -147,7 +157,7 @@ export class RetiReader extends Contract {
       const poolInfo = this.getRemotePoolInfo(registryAppId, validatorId);
       const nodeAssignment = this.getRemoteNodePoolAssignments(registryAppId, validatorId);
 
-      const allPoolInfo: AllPoolInfo = {
+      const allPoolInfo: Validator = {
         config: clone(config),
         state: clone(state),
         poolInfo: clone(poolInfo),
@@ -173,15 +183,47 @@ export class RetiReader extends Contract {
   }
 
   @abimethod({ readonly: true, onCreate: "allow" })
-  getAlgodVersion(poolAppIds: uint64[]): arc4.DynamicBytes {
+  getAlgodVersion(poolAppIds: uint64[]): string {
     for (const poolAppId of poolAppIds) {
       const [algodVer, exists] = op.AppGlobal.getExBytes(poolAppId, Bytes`algodVer`);
       if (exists) {
-        log(new arc4.DynamicBytes(algodVer));
+        log(encodeArc4(algodVer));
       } else {
-        log(new arc4.DynamicBytes(Bytes``));
+        log(encodeArc4(""));
       }
     }
-    return new arc4.DynamicBytes(Bytes``);
+    return "";
+  }
+
+  @abimethod({ readonly: true, onCreate: "allow" })
+  getAssets(assetIds: Asset[]): AssetInfo {
+    for (const asset of assetIds) {
+      const [creator, exists] = op.AssetParams.assetCreator(asset.id);
+      if (!exists) {
+        log(encodeArc4(this.getEmptyAssetInfo(asset.id)));
+      } else {
+        const assetInfo: AssetInfo = {
+          assetId: asset.id,
+          creator: creator,
+          total: asset.total,
+          decimals: new Uint8(asset.decimals),
+          unitName: asset.unitName.toString(),
+          name: asset.name.toString(),
+        };
+        log(encodeArc4(assetInfo));
+      }
+    }
+    return this.getEmptyAssetInfo(0);
+  }
+
+  private getEmptyAssetInfo(assetId: uint64): AssetInfo {
+    return {
+      assetId: assetId,
+      creator: Global.zeroAddress,
+      total: 0,
+      decimals: new Uint8(0),
+      unitName: "",
+      name: "",
+    };
   }
 }

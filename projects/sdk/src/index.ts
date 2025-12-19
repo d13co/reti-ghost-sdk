@@ -1,14 +1,34 @@
 import { AlgorandClient } from "@algorandfoundation/algokit-utils"
 import {
-  AllPoolInfo,
+  Validator,
   NodePoolAssignmentConfig,
   RetiReaderSDK,
   ValidatorConfig,
   ValidatorCurState,
   ValidatorPoolInfo,
+  AssetInfo as AssetInfoBase,
 } from "./generated/RetiReaderSDK.js"
 import { chunked } from "./utils/chunked.js"
-import { encodeUint64 } from "algosdk"
+import { chunk } from "./utils/chunk.js"
+import { ALGORAND_ZERO_ADDRESS_STRING } from "algosdk"
+
+export { Validator } from "./generated/RetiReaderSDK.js"
+
+export type AssetInfo =
+  | {
+      index: bigint
+      deleted: true
+    }
+  | {
+      index: bigint
+      params: {
+        creator: string
+        total: bigint
+        decimals: number
+        unitName: string
+        name: string
+      }
+    }
 
 export class RetiGhostSDK {
   static ghost = RetiReaderSDK
@@ -104,10 +124,10 @@ export class RetiGhostSDK {
     })
   }
 
-  async getAllPoolInfo(validatorId: number): Promise<AllPoolInfo> {
-    const extraFee = (4000).microAlgo()
-    const [data] = await this.ghostSDK.getAllPoolInfo({
-      methodArgsOrArgsArray: { registryAppId: this.registryAppId, validatorIds: [validatorId] },
+  async getValidators(validatorIds: number[]): Promise<Validator[]> {
+    const extraFee = (validatorIds.length * 4000).microAlgo()
+    const data = await this.ghostSDK.getValidators({
+      methodArgsOrArgsArray: { registryAppId: this.registryAppId, validatorIds },
       extraMethodCallArgs: { extraFee },
     })
     return data
@@ -120,11 +140,10 @@ export class RetiGhostSDK {
       16,
     )
     const extraMethodCallArgs = args.map((chunk) => ({ accessReferences: chunk.map((id) => ({ appId: BigInt(id) })) }))
-    const bytes = await this.ghostSDK.getAlgodVersion({
+    return this.ghostSDK.getAlgodVersion({
       methodArgsOrArgsArray: args.map((chunk) => ({ poolAppIds: chunk })),
       extraMethodCallArgs,
     })
-    return bytes.map((b) => Buffer.from(b).toString())
   }
 
   async getBlockTimestamps(num: number): Promise<bigint[]> {
@@ -136,12 +155,29 @@ export class RetiGhostSDK {
       extraMethodCallArgs: { firstValidRound: lastRound, lastValidRound: lastRound + 3n },
     })
   }
-}
 
-function chunk<T>(array: T[], size: number): T[][] {
-  const result: T[][] = []
-  for (let i = 0; i < array.length; i += size) {
-    result.push(array.slice(i, i + size))
+  @chunked(128)
+  async getAssets(assetIds: number[] | bigint[]): Promise<AssetInfo[]> {
+    const assets: AssetInfo[] = []
+    const data = await this.ghostSDK.getAssets({
+      methodArgsOrArgsArray: { assetIds },
+    })
+    for (const asset of data) {
+      if (asset.creator === ALGORAND_ZERO_ADDRESS_STRING) {
+        assets.push({ index: asset.assetId, deleted: true })
+      } else {
+        assets.push({
+          index: asset.assetId,
+          params: {
+            creator: asset.creator,
+            total: asset.total,
+            decimals: asset.decimals,
+            unitName: asset.unitName,
+            name: asset.name,
+          },
+        })
+      }
+    }
+    return assets
   }
-  return result
 }
