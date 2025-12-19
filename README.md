@@ -1,4 +1,4 @@
-# reti-fast-sdk
+# reti-ghost-sdk
 
 Fast Reti SDK that utilizes [ghost cotracts](https://github.com/d13co/ghostkit) to batch fetch data.
 

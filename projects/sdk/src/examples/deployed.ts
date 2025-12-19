@@ -1,5 +1,5 @@
 import { AlgorandClient } from "@algorandfoundation/algokit-utils"
-import { RetiFastSDK } from ".."
+import { RetiGhostSDK } from ".."
 import algosdk from "algosdk"
 
 const deployer = algosdk.mnemonicToSecretKey(
@@ -8,7 +8,7 @@ const deployer = algosdk.mnemonicToSecretKey(
 
 const algorand = AlgorandClient.testNet()
 
-const factory = algorand.client.getTypedAppFactory(RetiFastSDK.ghost.factory, {
+const factory = algorand.client.getTypedAppFactory(RetiGhostSDK.ghost.factory, {
   defaultSender: deployer.addr,
   defaultSigner: algosdk.makeBasicAccountTransactionSigner(deployer),
 })
@@ -18,7 +18,7 @@ const factory = algorand.client.getTypedAppFactory(RetiFastSDK.ghost.factory, {
 
   // console.log(`Deployed RetiReader at app ID: ${appClient.appId}`)
 
-  const deployed = new RetiFastSDK({
+  const deployed = new RetiGhostSDK({
     algorand,
     registryAppId: 0n,
     ghostAppId: 752173746n,
@@ -31,7 +31,7 @@ const factory = algorand.client.getTypedAppFactory(RetiFastSDK.ghost.factory, {
   console.timeEnd("deployed")
 
   console.log("--ghost--")
-  const ghost = new RetiFastSDK({
+  const ghost = new RetiGhostSDK({
     algorand,
     registryAppId: 0n,
   })

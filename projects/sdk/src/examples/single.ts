@@ -1,9 +1,9 @@
 import { AlgorandClient } from "@algorandfoundation/algokit-utils"
-import { RetiFastSDK } from ".."
+import { RetiGhostSDK } from ".."
 
 const registryAppId = 2714516089
 
-const sdk = new RetiFastSDK({
+const sdk = new RetiGhostSDK({
   algorand: AlgorandClient.mainNet(),
   registryAppId,
 })

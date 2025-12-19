@@ -10,7 +10,7 @@ import {
 import { chunked } from "./utils/chunked.js"
 import { encodeUint64 } from "algosdk"
 
-export class RetiFastSDK {
+export class RetiGhostSDK {
   static ghost = RetiReaderSDK
 
   public algorand: AlgorandClient
