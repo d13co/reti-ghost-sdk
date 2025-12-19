@@ -7,6 +7,7 @@ import {
   ValidatorCurState,
   ValidatorPoolInfo,
   AssetInfo as AssetInfoBase,
+  MbrAmountsAndProtocolConstraints,
 } from "./generated/RetiReaderSDK.js"
 import { chunked } from "./utils/chunked.js"
 import { chunk } from "./utils/chunk.js"
@@ -62,6 +63,15 @@ export class RetiGhostSDK {
   async getNumValidators(): Promise<number> {
     const { numV } = await this.algorand.app.getGlobalState(this.registryAppId)
     return Number(numV.value)
+  }
+
+  async getMbrAmountsAndProtocolConstraints(): Promise<MbrAmountsAndProtocolConstraints> {
+    const extraFee = (2000).microAlgo()
+    const [data] = await this.baseSDK.getMbrAmountsAndProtocolConstraints({
+      methodArgsOrArgsArray: { registryAppId: this.registryAppId },
+      extraMethodCallArgs: { extraFee },
+    })
+    return data
   }
 
   @chunked(127)

@@ -48,6 +48,27 @@ export type PoolInfo = {
   totalAlgoStaked: uint64;
 };
 
+export type MbrAmounts = {
+  addValidatorMbr: uint64;
+  addPoolMbr: uint64;
+  poolInitMbr: uint64;
+  addStakerMbr: uint64;
+};
+
+export type Constraints = {
+    epochPayoutRoundsMin: uint64
+    epochPayoutRoundsMax: uint64
+    minPctToValidatorWFourDecimals: uint64
+    maxPctToValidatorWFourDecimals: uint64
+    minEntryStake: uint64 // in microAlgo
+    maxAlgoPerPool: uint64 // in microAlgo
+    maxAlgoPerValidator: uint64 // in microAlgo
+    amtConsideredSaturated: uint64 // soft stake - when saturation starts - in microAlgo
+    maxNodes: uint64
+    maxPoolsPerNode: uint64
+    maxStakersPerPool: uint64
+}
+
 export type AssetInfo = {
   assetId: uint64;
   creator: Account;

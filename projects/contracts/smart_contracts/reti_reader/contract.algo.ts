@@ -1,5 +1,5 @@
 import { assert, Asset, Bytes, clone, Contract, FixedArray, Global, log, op, Txn, uint64 } from "@algorandfoundation/algorand-typescript";
-import { AssetInfo, NodeConfig, PoolInfo, ValidatorConfig, ValidatorCurState } from "../reti/types.algo";
+import { AssetInfo, Constraints, MbrAmounts, NodeConfig, PoolInfo, ValidatorConfig, ValidatorCurState } from "../reti/types.algo";
 import {
   abimethod,
   Address,
@@ -26,10 +26,34 @@ export type Validator = {
   nodeAssignment: NodePoolAssignmentConfig;
 };
 
+export type MbrAmountsAndProtocolConstraints = {
+  mbrAmounts: MbrAmounts;
+  constraints: Constraints;
+}
+
 export class RetiReader extends Contract {
   @baremethod({ allowActions: ["UpdateApplication", "DeleteApplication"] })
   adminOnly(): void {
     assert(Txn.sender === Global.creatorAddress);
+  }
+
+  @abimethod({ readonly: true, onCreate: "allow" })
+  getMbrAmountsAndProtocolConstraints(registryAppId: uint64): MbrAmountsAndProtocolConstraints {
+    const reti = compileArc4(Reti)
+    const mbrAmounts = reti.call.getMbrAmounts({
+      appId: registryAppId,
+    }).returnValue;
+
+    const constraints = reti.call.getProtocolConstraints({
+      appId: registryAppId,
+    }).returnValue;
+
+    log(encodeArc4({ mbrAmounts, constraints }));
+
+    return {
+      mbrAmounts,
+      constraints,
+    };
   }
 
   @abimethod({ readonly: true, onCreate: "allow" })

@@ -7,18 +7,28 @@ main:
     // smart_contracts/reti/contract.algo.ts:9
     // export class Reti extends Contract {
     txn NumAppArgs
-    bz main___algots__.defaultCreate@11
+    bz main___algots__.defaultCreate@13
     txn OnCompletion
     !
     assert // OnCompletion must be NoOp
     txn ApplicationID
     assert
-    pushbytess 0x75aff61d 0x1f2f0109 0x910e94ac 0x7bbb6c8d // method "getValidatorConfig(uint64)(uint64,address,address,uint64,uint8,address,uint64[4],uint64,uint64,uint64,uint32,uint32,address,uint64,uint64,uint8,uint64,uint64)", method "getValidatorState(uint64)(uint16,uint64,uint64,uint64)", method "getPools(uint64)(uint64,uint16,uint64)[]", method "getNodePoolAssignments(uint64)((uint64[3])[8])"
+    pushbytess 0x75aff61d 0x1f2f0109 0x910e94ac 0x7bbb6c8d 0x8a87142d 0xd1366cc3 // method "getValidatorConfig(uint64)(uint64,address,address,uint64,uint8,address,uint64[4],uint64,uint64,uint64,uint32,uint32,address,uint64,uint64,uint8,uint64,uint64)", method "getValidatorState(uint64)(uint16,uint64,uint64,uint64)", method "getPools(uint64)(uint64,uint16,uint64)[]", method "getNodePoolAssignments(uint64)((uint64[3])[8])", method "getMbrAmounts()(uint64,uint64,uint64,uint64)", method "getProtocolConstraints()(uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64)"
     txna ApplicationArgs 0
-    match getValidatorConfig getValidatorState getPools getNodePoolAssignments
+    match getValidatorConfig getValidatorState getPools getNodePoolAssignments main_getMbrAmounts_route@8 main_getProtocolConstraints_route@9
     err
 
-main___algots__.defaultCreate@11:
+main_getProtocolConstraints_route@9:
+    // smart_contracts/reti/contract.algo.ts:37
+    // err("stub");
+    err // stub
+
+main_getMbrAmounts_route@8:
+    // smart_contracts/reti/contract.algo.ts:32
+    // err("stub");
+    err // stub
+
+main___algots__.defaultCreate@13:
     // smart_contracts/reti/contract.algo.ts:9
     // export class Reti extends Contract {
     txn OnCompletion

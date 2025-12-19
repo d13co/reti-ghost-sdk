@@ -1,9 +1,9 @@
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import { RetiFactory } from '../artifacts/reti/RetiClient'
 
 // Below is a showcase of various deployment options you can use in TypeScript Client
 export async function deploy() {
-  console.log('=== Deploying Reti ===')
+  return true;
+//  console.log('=== Deploying Reti ===')
 
   const algorand = AlgorandClient.fromEnvironment()
   const deployer = await algorand.account.fromEnvironment('DEPLOYER')
@@ -23,7 +23,7 @@ export async function deploy() {
     })
   }
 
-  const method = 'hello'  
+  const method = 'hello'
   const response = await appClient.send.hello({
     args: { name: 'world' },
   })

@@ -5,20 +5,20 @@
 main:
     intcblock 0 8 1 2
     bytecblock 0x151f7c75 0x151f7c750000000000000000000000000000000000000000000000000000
-    // smart_contracts/reti_reader/contract.algo.ts:29
+    // smart_contracts/reti_reader/contract.algo.ts:34
     // export class RetiReader extends Contract {
     txn NumAppArgs
-    bz main_adminOnly@15
+    bz main_adminOnly@16
     txn OnCompletion
     !
     assert // OnCompletion must be NoOp
-    pushbytess 0x84c4425a 0x24e00c80 0xbb882927 0xa62f1132 0xc2c98a6b 0x3d3b8b4a 0xbb460bee 0x0cc29dd8 // method "getValidatorConfig(uint64,uint64[])(uint64,address,address,uint64,uint8,address,uint64[4],uint64,uint64,uint64,uint32,uint32,address,uint64,uint64,uint8,uint64,uint64)", method "getValidatorStates(uint64,uint64[])(uint16,uint64,uint64,uint64)", method "getPools(uint64,uint64[])(uint64,(uint64,uint16,uint64))", method "getNodePoolAssignments(uint64,uint64[])((uint64[3])[8])", method "getValidators(uint64,uint64[])((uint64,address,address,uint64,uint8,address,uint64[4],uint64,uint64,uint64,uint32,uint32,address,uint64,uint64,uint8,uint64,uint64),(uint16,uint64,uint64,uint64),(uint64,uint16,uint64)[],((uint64[3])[8]))", method "getBlockTimestamps(uint64)uint64", method "getAlgodVersion(uint64[])string", method "getAssets(uint64[])(uint64,address,uint64,uint8,string,string)"
+    pushbytess 0xd7bf8445 0x84c4425a 0x24e00c80 0xbb882927 0xa62f1132 0xc2c98a6b 0x3d3b8b4a 0xbb460bee 0x0cc29dd8 // method "getMbrAmountsAndProtocolConstraints(uint64)((uint64,uint64,uint64,uint64),(uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64))", method "getValidatorConfig(uint64,uint64[])(uint64,address,address,uint64,uint8,address,uint64[4],uint64,uint64,uint64,uint32,uint32,address,uint64,uint64,uint8,uint64,uint64)", method "getValidatorStates(uint64,uint64[])(uint16,uint64,uint64,uint64)", method "getPools(uint64,uint64[])(uint64,(uint64,uint16,uint64))", method "getNodePoolAssignments(uint64,uint64[])((uint64[3])[8])", method "getValidators(uint64,uint64[])((uint64,address,address,uint64,uint8,address,uint64[4],uint64,uint64,uint64,uint32,uint32,address,uint64,uint64,uint8,uint64,uint64),(uint16,uint64,uint64,uint64),(uint64,uint16,uint64)[],((uint64[3])[8]))", method "getBlockTimestamps(uint64)uint64", method "getAlgodVersion(uint64[])string", method "getAssets(uint64[])(uint64,address,uint64,uint8,string,string)"
     txna ApplicationArgs 0
-    match getValidatorConfig getValidatorStates getPools getNodePoolAssignments getValidators getBlockTimestamps getAlgodVersion getAssets
+    match getMbrAmountsAndProtocolConstraints getValidatorConfig getValidatorStates getPools getNodePoolAssignments getValidators getBlockTimestamps getAlgodVersion getAssets
     err
 
-main_adminOnly@15:
-    // smart_contracts/reti_reader/contract.algo.ts:30
+main_adminOnly@16:
+    // smart_contracts/reti_reader/contract.algo.ts:35
     // @baremethod({ allowActions: ["UpdateApplication", "DeleteApplication"] })
     intc_2 // 1
     txn OnCompletion
@@ -28,19 +28,103 @@ main_adminOnly@15:
     txn ApplicationID
     &&
     assert // OnCompletion must be one of UpdateApplication, DeleteApplication && can only call when not creating
-    // smart_contracts/reti_reader/contract.algo.ts:32
+    // smart_contracts/reti_reader/contract.algo.ts:37
     // assert(Txn.sender === Global.creatorAddress);
     txn Sender
     global CreatorAddress
     ==
-    // smart_contracts/reti_reader/contract.algo.ts:30
+    // smart_contracts/reti_reader/contract.algo.ts:35
     // @baremethod({ allowActions: ["UpdateApplication", "DeleteApplication"] })
+    return
+
+
+// smart_contracts/reti_reader/contract.algo.ts::RetiReader.getMbrAmountsAndProtocolConstraints[routing]() -> void:
+getMbrAmountsAndProtocolConstraints:
+    // smart_contracts/reti_reader/contract.algo.ts:40
+    // @abimethod({ readonly: true, onCreate: "allow" })
+    txna ApplicationArgs 1
+    dup
+    len
+    intc_1 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    // smart_contracts/reti_reader/contract.algo.ts:43-45
+    // const mbrAmounts = reti.call.getMbrAmounts({
+    //   appId: registryAppId,
+    // }).returnValue;
+    itxn_begin
+    pushbytes 0x8a87142d // method "getMbrAmounts()(uint64,uint64,uint64,uint64)"
+    itxn_field ApplicationArgs
+    intc_0 // 0
+    itxn_field OnCompletion
+    dup
+    itxn_field ApplicationID
+    pushint 6 // appl
+    itxn_field TypeEnum
+    intc_0 // 0
+    itxn_field Fee
+    itxn_submit
+    itxn LastLog
+    dup
+    extract 4 0
+    swap
+    extract 0 4
+    bytec_0 // 0x151f7c75
+    ==
+    assert // Bytes has valid prefix
+    dup
+    len
+    pushint 32 // 32
+    ==
+    assert // invalid number of bytes for MbrAmounts
+    // smart_contracts/reti_reader/contract.algo.ts:47-49
+    // const constraints = reti.call.getProtocolConstraints({
+    //   appId: registryAppId,
+    // }).returnValue;
+    itxn_begin
+    pushbytes 0xd1366cc3 // method "getProtocolConstraints()(uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64)"
+    itxn_field ApplicationArgs
+    intc_0 // 0
+    itxn_field OnCompletion
+    swap
+    itxn_field ApplicationID
+    pushint 6 // appl
+    itxn_field TypeEnum
+    intc_0 // 0
+    itxn_field Fee
+    itxn_submit
+    itxn LastLog
+    dup
+    extract 4 0
+    swap
+    extract 0 4
+    bytec_0 // 0x151f7c75
+    ==
+    assert // Bytes has valid prefix
+    dup
+    len
+    pushint 88 // 88
+    ==
+    assert // invalid number of bytes for Constraints
+    // smart_contracts/reti_reader/contract.algo.ts:51
+    // log(encodeArc4({ mbrAmounts, constraints }));
+    concat
+    dup
+    log
+    // smart_contracts/reti_reader/contract.algo.ts:40
+    // @abimethod({ readonly: true, onCreate: "allow" })
+    bytec_0 // 0x151f7c75
+    swap
+    concat
+    log
+    intc_2 // 1
     return
 
 
 // smart_contracts/reti_reader/contract.algo.ts::RetiReader.getValidatorConfig[routing]() -> void:
 getValidatorConfig:
-    // smart_contracts/reti_reader/contract.algo.ts:35
+    // smart_contracts/reti_reader/contract.algo.ts:59
     // @abimethod({ readonly: true, onCreate: "allow" })
     txna ApplicationArgs 1
     dup
@@ -66,7 +150,7 @@ getValidatorConfig:
     intc_0 // 0
 
 getValidatorConfig_for_header@2:
-    // smart_contracts/reti_reader/contract.algo.ts:37
+    // smart_contracts/reti_reader/contract.algo.ts:61
     // for (const validatorId of validatorIds) {
     dup
     dig 2
@@ -80,7 +164,7 @@ getValidatorConfig_for_header@2:
     intc_1 // 8
     *
     extract_uint64
-    // smart_contracts/reti_reader/contract.algo.ts:38
+    // smart_contracts/reti_reader/contract.algo.ts:62
     // log(encodeArc4(this.getRemoteValidatorConfig(registryAppId, validatorId)));
     dig 5
     swap
@@ -92,7 +176,7 @@ getValidatorConfig_for_header@2:
     b getValidatorConfig_for_header@2
 
 getValidatorConfig_after_for@5:
-    // smart_contracts/reti_reader/contract.algo.ts:35
+    // smart_contracts/reti_reader/contract.algo.ts:59
     // @abimethod({ readonly: true, onCreate: "allow" })
     pushbytes base32(CUPXY5IAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)
     log
@@ -102,7 +186,7 @@ getValidatorConfig_after_for@5:
 
 // smart_contracts/reti_reader/contract.algo.ts::RetiReader.getValidatorStates[routing]() -> void:
 getValidatorStates:
-    // smart_contracts/reti_reader/contract.algo.ts:73
+    // smart_contracts/reti_reader/contract.algo.ts:97
     // @abimethod({ readonly: true, onCreate: "allow" })
     txna ApplicationArgs 1
     dup
@@ -128,7 +212,7 @@ getValidatorStates:
     intc_0 // 0
 
 getValidatorStates_for_header@2:
-    // smart_contracts/reti_reader/contract.algo.ts:75
+    // smart_contracts/reti_reader/contract.algo.ts:99
     // for (const validatorId of validatorIds) {
     dup
     dig 2
@@ -142,7 +226,7 @@ getValidatorStates_for_header@2:
     intc_1 // 8
     *
     extract_uint64
-    // smart_contracts/reti_reader/contract.algo.ts:76
+    // smart_contracts/reti_reader/contract.algo.ts:100
     // log(encodeArc4(this.getRemoteValidatorState(registryAppId, validatorId)));
     dig 5
     swap
@@ -154,7 +238,7 @@ getValidatorStates_for_header@2:
     b getValidatorStates_for_header@2
 
 getValidatorStates_after_for@5:
-    // smart_contracts/reti_reader/contract.algo.ts:73
+    // smart_contracts/reti_reader/contract.algo.ts:97
     // @abimethod({ readonly: true, onCreate: "allow" })
     bytec_1 // 0x151f7c750000000000000000000000000000000000000000000000000000
     log
@@ -167,7 +251,7 @@ getPools:
     intc_0 // 0
     pushbytes ""
     dupn 2
-    // smart_contracts/reti_reader/contract.algo.ts:97
+    // smart_contracts/reti_reader/contract.algo.ts:121
     // @abimethod({ readonly: true, onCreate: "allow" })
     txna ApplicationArgs 1
     dup
@@ -193,7 +277,7 @@ getPools:
     intc_0 // 0
 
 getPools_for_header@2:
-    // smart_contracts/reti_reader/contract.algo.ts:100
+    // smart_contracts/reti_reader/contract.algo.ts:124
     // for (const validatorId of validatorIds) {
     dup
     dig 2
@@ -207,14 +291,14 @@ getPools_for_header@2:
     extract_uint64
     dup
     bury 6
-    // smart_contracts/reti_reader/contract.algo.ts:101
+    // smart_contracts/reti_reader/contract.algo.ts:125
     // const poolInfoArr = this.getRemotePoolInfo(registryAppId, validatorId);
     dig 4
     swap
     callsub getRemotePoolInfo
     dup
     bury 9
-    // smart_contracts/reti_reader/contract.algo.ts:102
+    // smart_contracts/reti_reader/contract.algo.ts:126
     // for (const poolInfo of clone(poolInfoArr)) {
     intc_0 // 0
     extract_uint16 // on error: invalid array length header
@@ -223,7 +307,7 @@ getPools_for_header@2:
     bury 6
 
 getPools_for_header@4:
-    // smart_contracts/reti_reader/contract.algo.ts:102
+    // smart_contracts/reti_reader/contract.algo.ts:126
     // for (const poolInfo of clone(poolInfoArr)) {
     dig 5
     dig 7
@@ -238,7 +322,7 @@ getPools_for_header@4:
     *
     pushint 18 // 18
     extract3 // on error: index access is out of bounds
-    // smart_contracts/reti_reader/contract.algo.ts:103
+    // smart_contracts/reti_reader/contract.algo.ts:127
     // log(encodeArc4({ validatorId, poolInfo }));
     dig 6
     itob
@@ -258,7 +342,7 @@ getPools_after_for@7:
     b getPools_for_header@2
 
 getPools_after_for@9:
-    // smart_contracts/reti_reader/contract.algo.ts:97
+    // smart_contracts/reti_reader/contract.algo.ts:121
     // @abimethod({ readonly: true, onCreate: "allow" })
     bytec_1 // 0x151f7c750000000000000000000000000000000000000000000000000000
     log
@@ -268,7 +352,7 @@ getPools_after_for@9:
 
 // smart_contracts/reti_reader/contract.algo.ts::RetiReader.getNodePoolAssignments[routing]() -> void:
 getNodePoolAssignments:
-    // smart_contracts/reti_reader/contract.algo.ts:128
+    // smart_contracts/reti_reader/contract.algo.ts:152
     // @abimethod({ readonly: true, onCreate: "allow" })
     txna ApplicationArgs 1
     dup
@@ -294,7 +378,7 @@ getNodePoolAssignments:
     intc_0 // 0
 
 getNodePoolAssignments_for_header@2:
-    // smart_contracts/reti_reader/contract.algo.ts:130
+    // smart_contracts/reti_reader/contract.algo.ts:154
     // for (const validatorId of validatorIds) {
     dup
     dig 2
@@ -308,7 +392,7 @@ getNodePoolAssignments_for_header@2:
     intc_1 // 8
     *
     extract_uint64
-    // smart_contracts/reti_reader/contract.algo.ts:131
+    // smart_contracts/reti_reader/contract.algo.ts:155
     // log(encodeArc4(this.getRemoteNodePoolAssignments(registryAppId, validatorId)));
     dig 5
     swap
@@ -320,7 +404,7 @@ getNodePoolAssignments_for_header@2:
     b getNodePoolAssignments_for_header@2
 
 getNodePoolAssignments_after_for@5:
-    // smart_contracts/reti_reader/contract.algo.ts:128
+    // smart_contracts/reti_reader/contract.algo.ts:152
     // @abimethod({ readonly: true, onCreate: "allow" })
     pushbytes 0x151f7c75000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
     log
@@ -330,7 +414,7 @@ getNodePoolAssignments_after_for@5:
 
 // smart_contracts/reti_reader/contract.algo.ts::RetiReader.getValidators[routing]() -> void:
 getValidators:
-    // smart_contracts/reti_reader/contract.algo.ts:150
+    // smart_contracts/reti_reader/contract.algo.ts:174
     // @abimethod({ readonly: true, onCreate: "allow" })
     txna ApplicationArgs 1
     dup
@@ -356,7 +440,7 @@ getValidators:
     intc_0 // 0
 
 getValidators_for_header@2:
-    // smart_contracts/reti_reader/contract.algo.ts:152
+    // smart_contracts/reti_reader/contract.algo.ts:176
     // for (const validatorId of validatorIds) {
     dup
     dig 2
@@ -370,29 +454,29 @@ getValidators_for_header@2:
     intc_1 // 8
     *
     extract_uint64
-    // smart_contracts/reti_reader/contract.algo.ts:155
+    // smart_contracts/reti_reader/contract.algo.ts:179
     // const config = this.getRemoteValidatorConfig(registryAppId, validatorId);
     dig 5
     dup
     cover 2
     dig 1
     callsub getRemoteValidatorConfig
-    // smart_contracts/reti_reader/contract.algo.ts:156
+    // smart_contracts/reti_reader/contract.algo.ts:180
     // const state = this.getRemoteValidatorState(registryAppId, validatorId);
     dig 2
     dig 2
     callsub getRemoteValidatorState
-    // smart_contracts/reti_reader/contract.algo.ts:157
+    // smart_contracts/reti_reader/contract.algo.ts:181
     // const poolInfo = this.getRemotePoolInfo(registryAppId, validatorId);
     dig 3
     dig 3
     callsub getRemotePoolInfo
-    // smart_contracts/reti_reader/contract.algo.ts:158
+    // smart_contracts/reti_reader/contract.algo.ts:182
     // const nodeAssignment = this.getRemoteNodePoolAssignments(registryAppId, validatorId);
     uncover 4
     uncover 4
     callsub getRemoteNodePoolAssignments
-    // smart_contracts/reti_reader/contract.algo.ts:160-165
+    // smart_contracts/reti_reader/contract.algo.ts:184-189
     // const allPoolInfo: Validator = {
     //   config: clone(config),
     //   state: clone(state),
@@ -408,7 +492,7 @@ getValidators_for_header@2:
     concat
     swap
     concat
-    // smart_contracts/reti_reader/contract.algo.ts:166
+    // smart_contracts/reti_reader/contract.algo.ts:190
     // log(encodeArc4(allPoolInfo));
     log
     intc_2 // 1
@@ -417,7 +501,7 @@ getValidators_for_header@2:
     b getValidators_for_header@2
 
 getValidators_after_for@5:
-    // smart_contracts/reti_reader/contract.algo.ts:150
+    // smart_contracts/reti_reader/contract.algo.ts:174
     // @abimethod({ readonly: true, onCreate: "allow" })
     pushbytes base32(CUPXY5IAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADTQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)
     log
@@ -427,7 +511,7 @@ getValidators_after_for@5:
 
 // smart_contracts/reti_reader/contract.algo.ts::RetiReader.getBlockTimestamps[routing]() -> void:
 getBlockTimestamps:
-    // smart_contracts/reti_reader/contract.algo.ts:177
+    // smart_contracts/reti_reader/contract.algo.ts:201
     // @abimethod({ readonly: true, onCreate: "allow" })
     txna ApplicationArgs 1
     dup
@@ -436,7 +520,7 @@ getBlockTimestamps:
     ==
     assert // invalid number of bytes for arc4.uint64
     btoi
-    // smart_contracts/reti_reader/contract.algo.ts:179
+    // smart_contracts/reti_reader/contract.algo.ts:203
     // for (let round: uint64 = Txn.lastValid - num - 1; round < Txn.firstValid - 1; round++) {
     txn LastValid
     swap
@@ -445,7 +529,7 @@ getBlockTimestamps:
     -
 
 getBlockTimestamps_while_top@2:
-    // smart_contracts/reti_reader/contract.algo.ts:179
+    // smart_contracts/reti_reader/contract.algo.ts:203
     // for (let round: uint64 = Txn.lastValid - num - 1; round < Txn.firstValid - 1; round++) {
     txn FirstValid
     intc_2 // 1
@@ -453,13 +537,13 @@ getBlockTimestamps_while_top@2:
     dig 1
     >
     bz getBlockTimestamps_after_while@4
-    // smart_contracts/reti_reader/contract.algo.ts:180
+    // smart_contracts/reti_reader/contract.algo.ts:204
     // log(op.Block.blkTimestamp(round));
     dupn 2
     block BlkTimestamp
     itob
     log
-    // smart_contracts/reti_reader/contract.algo.ts:179
+    // smart_contracts/reti_reader/contract.algo.ts:203
     // for (let round: uint64 = Txn.lastValid - num - 1; round < Txn.firstValid - 1; round++) {
     intc_2 // 1
     +
@@ -467,7 +551,7 @@ getBlockTimestamps_while_top@2:
     b getBlockTimestamps_while_top@2
 
 getBlockTimestamps_after_while@4:
-    // smart_contracts/reti_reader/contract.algo.ts:177
+    // smart_contracts/reti_reader/contract.algo.ts:201
     // @abimethod({ readonly: true, onCreate: "allow" })
     pushbytes 0x151f7c750000000000000000
     log
@@ -478,7 +562,7 @@ getBlockTimestamps_after_while@4:
 // smart_contracts/reti_reader/contract.algo.ts::RetiReader.getAlgodVersion[routing]() -> void:
 getAlgodVersion:
     intc_0 // 0
-    // smart_contracts/reti_reader/contract.algo.ts:185
+    // smart_contracts/reti_reader/contract.algo.ts:209
     // @abimethod({ readonly: true, onCreate: "allow" })
     txna ApplicationArgs 1
     dupn 2
@@ -497,7 +581,7 @@ getAlgodVersion:
     intc_0 // 0
 
 getAlgodVersion_for_header@2:
-    // smart_contracts/reti_reader/contract.algo.ts:187
+    // smart_contracts/reti_reader/contract.algo.ts:211
     // for (const poolAppId of poolAppIds) {
     dup
     dig 2
@@ -509,16 +593,16 @@ getAlgodVersion_for_header@2:
     intc_1 // 8
     *
     extract_uint64
-    // smart_contracts/reti_reader/contract.algo.ts:188
+    // smart_contracts/reti_reader/contract.algo.ts:212
     // const [algodVer, exists] = op.AppGlobal.getExBytes(poolAppId, Bytes`algodVer`);
     pushbytes "algodVer"
     app_global_get_ex
     swap
     bury 5
-    // smart_contracts/reti_reader/contract.algo.ts:189
+    // smart_contracts/reti_reader/contract.algo.ts:213
     // if (exists) {
     bz getAlgodVersion_else_body@5
-    // smart_contracts/reti_reader/contract.algo.ts:190
+    // smart_contracts/reti_reader/contract.algo.ts:214
     // log(encodeArc4(algodVer));
     dig 3
     dup
@@ -537,14 +621,14 @@ getAlgodVersion_after_if_else@6:
     b getAlgodVersion_for_header@2
 
 getAlgodVersion_else_body@5:
-    // smart_contracts/reti_reader/contract.algo.ts:192
+    // smart_contracts/reti_reader/contract.algo.ts:216
     // log(encodeArc4(""));
     pushbytes 0x0000
     log
     b getAlgodVersion_after_if_else@6
 
 getAlgodVersion_after_for@8:
-    // smart_contracts/reti_reader/contract.algo.ts:185
+    // smart_contracts/reti_reader/contract.algo.ts:209
     // @abimethod({ readonly: true, onCreate: "allow" })
     pushbytes 0x151f7c750000
     log
@@ -555,7 +639,7 @@ getAlgodVersion_after_for@8:
 // smart_contracts/reti_reader/contract.algo.ts::RetiReader.getAssets[routing]() -> void:
 getAssets:
     intc_0 // 0
-    // smart_contracts/reti_reader/contract.algo.ts:198
+    // smart_contracts/reti_reader/contract.algo.ts:222
     // @abimethod({ readonly: true, onCreate: "allow" })
     txna ApplicationArgs 1
     dupn 2
@@ -574,7 +658,7 @@ getAssets:
     intc_0 // 0
 
 getAssets_for_header@2:
-    // smart_contracts/reti_reader/contract.algo.ts:200
+    // smart_contracts/reti_reader/contract.algo.ts:224
     // for (const asset of assetIds) {
     dup
     dig 2
@@ -587,15 +671,15 @@ getAssets_for_header@2:
     *
     extract_uint64
     dup
-    // smart_contracts/reti_reader/contract.algo.ts:201
+    // smart_contracts/reti_reader/contract.algo.ts:225
     // const [creator, exists] = op.AssetParams.assetCreator(asset.id);
     asset_params_get AssetCreator
     swap
     bury 6
-    // smart_contracts/reti_reader/contract.algo.ts:202
+    // smart_contracts/reti_reader/contract.algo.ts:226
     // if (!exists) {
     bnz getAssets_else_body@5
-    // smart_contracts/reti_reader/contract.algo.ts:203
+    // smart_contracts/reti_reader/contract.algo.ts:227
     // log(encodeArc4(this.getEmptyAssetInfo(asset.id)));
     callsub getEmptyAssetInfo
     log
@@ -608,12 +692,12 @@ getAssets_after_if_else@6:
     b getAssets_for_header@2
 
 getAssets_else_body@5:
-    // smart_contracts/reti_reader/contract.algo.ts:208
+    // smart_contracts/reti_reader/contract.algo.ts:232
     // total: asset.total,
     dup
     asset_params_get AssetTotal
     assert // asset exists
-    // smart_contracts/reti_reader/contract.algo.ts:209
+    // smart_contracts/reti_reader/contract.algo.ts:233
     // decimals: new Uint8(asset.decimals),
     dig 1
     asset_params_get AssetDecimals
@@ -625,17 +709,17 @@ getAssets_else_body@5:
     <=
     assert // overflow
     extract 7 1
-    // smart_contracts/reti_reader/contract.algo.ts:210
+    // smart_contracts/reti_reader/contract.algo.ts:234
     // unitName: asset.unitName.toString(),
     dig 2
     asset_params_get AssetUnitName
     assert // asset exists
-    // smart_contracts/reti_reader/contract.algo.ts:211
+    // smart_contracts/reti_reader/contract.algo.ts:235
     // name: asset.name.toString(),
     dig 3
     asset_params_get AssetName
     assert // asset exists
-    // smart_contracts/reti_reader/contract.algo.ts:205-212
+    // smart_contracts/reti_reader/contract.algo.ts:229-236
     // const assetInfo: AssetInfo = {
     //   assetId: asset.id,
     //   creator: creator,
@@ -682,17 +766,17 @@ getAssets_else_body@5:
     concat
     swap
     concat
-    // smart_contracts/reti_reader/contract.algo.ts:213
+    // smart_contracts/reti_reader/contract.algo.ts:237
     // log(encodeArc4(assetInfo));
     log
     b getAssets_after_if_else@6
 
 getAssets_after_for@8:
-    // smart_contracts/reti_reader/contract.algo.ts:216
+    // smart_contracts/reti_reader/contract.algo.ts:240
     // return this.getEmptyAssetInfo(0);
     intc_0 // 0
     callsub getEmptyAssetInfo
-    // smart_contracts/reti_reader/contract.algo.ts:198
+    // smart_contracts/reti_reader/contract.algo.ts:222
     // @abimethod({ readonly: true, onCreate: "allow" })
     bytec_0 // 0x151f7c75
     swap
@@ -704,20 +788,20 @@ getAssets_after_for@8:
 
 // smart_contracts/reti_reader/contract.algo.ts::RetiReader.getRemoteValidatorConfig(registryAppId: uint64, validatorId: uint64) -> bytes:
 getRemoteValidatorConfig:
-    // smart_contracts/reti_reader/contract.algo.ts:43
+    // smart_contracts/reti_reader/contract.algo.ts:67
     // private getRemoteValidatorConfig(registryAppId: uint64, validatorId: uint64): ValidatorConfig {
     proto 2 1
-    // smart_contracts/reti_reader/contract.algo.ts:44-47
+    // smart_contracts/reti_reader/contract.algo.ts:68-71
     // return compileArc4(Reti).call.getValidatorConfig({
     //   appId: registryAppId,
     //   args: [validatorId],
     // }).returnValue;
     itxn_begin
-    // smart_contracts/reti_reader/contract.algo.ts:46
+    // smart_contracts/reti_reader/contract.algo.ts:70
     // args: [validatorId],
     frame_dig -1
     itob
-    // smart_contracts/reti_reader/contract.algo.ts:44-47
+    // smart_contracts/reti_reader/contract.algo.ts:68-71
     // return compileArc4(Reti).call.getValidatorConfig({
     //   appId: registryAppId,
     //   args: [validatorId],
@@ -752,20 +836,20 @@ getRemoteValidatorConfig:
 
 // smart_contracts/reti_reader/contract.algo.ts::RetiReader.getRemoteValidatorState(registryAppId: uint64, validatorId: uint64) -> bytes:
 getRemoteValidatorState:
-    // smart_contracts/reti_reader/contract.algo.ts:81
+    // smart_contracts/reti_reader/contract.algo.ts:105
     // private getRemoteValidatorState(registryAppId: uint64, validatorId: uint64): ValidatorCurState {
     proto 2 1
-    // smart_contracts/reti_reader/contract.algo.ts:82-85
+    // smart_contracts/reti_reader/contract.algo.ts:106-109
     // return compileArc4(Reti).call.getValidatorState({
     //   appId: registryAppId,
     //   args: [validatorId],
     // }).returnValue;
     itxn_begin
-    // smart_contracts/reti_reader/contract.algo.ts:84
+    // smart_contracts/reti_reader/contract.algo.ts:108
     // args: [validatorId],
     frame_dig -1
     itob
-    // smart_contracts/reti_reader/contract.algo.ts:82-85
+    // smart_contracts/reti_reader/contract.algo.ts:106-109
     // return compileArc4(Reti).call.getValidatorState({
     //   appId: registryAppId,
     //   args: [validatorId],
@@ -800,20 +884,20 @@ getRemoteValidatorState:
 
 // smart_contracts/reti_reader/contract.algo.ts::RetiReader.getRemotePoolInfo(registryAppId: uint64, validatorId: uint64) -> bytes:
 getRemotePoolInfo:
-    // smart_contracts/reti_reader/contract.algo.ts:110
+    // smart_contracts/reti_reader/contract.algo.ts:134
     // private getRemotePoolInfo(registryAppId: uint64, validatorId: uint64): PoolInfo[] {
     proto 2 1
-    // smart_contracts/reti_reader/contract.algo.ts:111-114
+    // smart_contracts/reti_reader/contract.algo.ts:135-138
     // return compileArc4(Reti).call.getPools({
     //   appId: registryAppId,
     //   args: [validatorId],
     // }).returnValue;
     itxn_begin
-    // smart_contracts/reti_reader/contract.algo.ts:113
+    // smart_contracts/reti_reader/contract.algo.ts:137
     // args: [validatorId],
     frame_dig -1
     itob
-    // smart_contracts/reti_reader/contract.algo.ts:111-114
+    // smart_contracts/reti_reader/contract.algo.ts:135-138
     // return compileArc4(Reti).call.getPools({
     //   appId: registryAppId,
     //   args: [validatorId],
@@ -854,20 +938,20 @@ getRemotePoolInfo:
 
 // smart_contracts/reti_reader/contract.algo.ts::RetiReader.getRemoteNodePoolAssignments(registryAppId: uint64, validatorId: uint64) -> bytes:
 getRemoteNodePoolAssignments:
-    // smart_contracts/reti_reader/contract.algo.ts:136
+    // smart_contracts/reti_reader/contract.algo.ts:160
     // private getRemoteNodePoolAssignments(registryAppId: uint64, validatorId: uint64): NodePoolAssignmentConfig {
     proto 2 1
-    // smart_contracts/reti_reader/contract.algo.ts:137-140
+    // smart_contracts/reti_reader/contract.algo.ts:161-164
     // return compileArc4(Reti).call.getNodePoolAssignments({
     //   appId: registryAppId,
     //   args: [validatorId],
     // }).returnValue;
     itxn_begin
-    // smart_contracts/reti_reader/contract.algo.ts:139
+    // smart_contracts/reti_reader/contract.algo.ts:163
     // args: [validatorId],
     frame_dig -1
     itob
-    // smart_contracts/reti_reader/contract.algo.ts:137-140
+    // smart_contracts/reti_reader/contract.algo.ts:161-164
     // return compileArc4(Reti).call.getNodePoolAssignments({
     //   appId: registryAppId,
     //   args: [validatorId],
@@ -902,13 +986,13 @@ getRemoteNodePoolAssignments:
 
 // smart_contracts/reti_reader/contract.algo.ts::RetiReader.getEmptyAssetInfo(assetId: uint64) -> bytes:
 getEmptyAssetInfo:
-    // smart_contracts/reti_reader/contract.algo.ts:219
+    // smart_contracts/reti_reader/contract.algo.ts:243
     // private getEmptyAssetInfo(assetId: uint64): AssetInfo {
     proto 1 1
-    // smart_contracts/reti_reader/contract.algo.ts:222
+    // smart_contracts/reti_reader/contract.algo.ts:246
     // creator: Global.zeroAddress,
     global ZeroAddress
-    // smart_contracts/reti_reader/contract.algo.ts:220-227
+    // smart_contracts/reti_reader/contract.algo.ts:244-251
     // return {
     //   assetId: assetId,
     //   creator: Global.zeroAddress,
@@ -921,10 +1005,10 @@ getEmptyAssetInfo:
     itob
     swap
     concat
-    // smart_contracts/reti_reader/contract.algo.ts:223
+    // smart_contracts/reti_reader/contract.algo.ts:247
     // total: 0,
     intc_0 // 0
-    // smart_contracts/reti_reader/contract.algo.ts:220-227
+    // smart_contracts/reti_reader/contract.algo.ts:244-251
     // return {
     //   assetId: assetId,
     //   creator: Global.zeroAddress,
