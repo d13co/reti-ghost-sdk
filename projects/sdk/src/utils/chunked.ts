@@ -6,7 +6,10 @@ import { chunk } from "./chunk.js";
  * @param chunkSize - The maximum size of each chunk
  * @returns Method decorator
  */
-export function chunked(chunkSize: number, { chunkArgIndex = 0, concurrency = 2 } = {}) {
+export function chunked(
+  chunkSize: number,
+  { chunkArgIndex = 0 }: { chunkArgIndex?: number } = {},
+) {
   return function (
     target: any,
     propertyKey: string,
@@ -16,18 +19,24 @@ export function chunked(chunkSize: number, { chunkArgIndex = 0, concurrency = 2 
 
     descriptor.value = async function (...args: any[]) {
       const ids = args[chunkArgIndex];
+      const instanceConcurrency =
+        this && typeof (this as any).concurrency === "number"
+          ? (this as any).concurrency
+          : 2;
       // If appIds array is smaller than or equal to chunk size, call original method directly
       if (ids.length <= chunkSize) {
         // console.log("No chunking needed, calling original method directly.");
         return originalMethod.apply(this, [ids, ...args]);
       }
-      console.log({ message: `Chunking array of size ${ids.length} into chunks of size ${chunkSize} with concurrency ${concurrency}` });
+      console.log({
+        message: `Chunking array of size ${ids.length} into chunks of size ${chunkSize} with concurrency ${instanceConcurrency}`,
+      });
       // Chunk the appIds array
       const chunks = chunk(ids, chunkSize);
       const results = await pMap(chunks, async (chunkedIds) => {
         // console.log(`Processing chunk of size ${chunkedIds.length}: ${chunkedIds}`);
         return originalMethod.apply(this, [chunkedIds, ...args]);
-      }, { concurrency });
+      }, { concurrency: instanceConcurrency });
 
       // Flatten the results into a single array
       return results.flat();

@@ -31,24 +31,28 @@ export type AssetInfo =
     }
 
 export class RetiGhostSDK {
-  static ghost = RetiReaderSDK
+  static baseSDK = RetiReaderSDK
 
   public algorand: AlgorandClient
   public registryAppId: bigint
-  public ghostSDK: RetiReaderSDK
+  public baseSDK: RetiReaderSDK
+  public concurrency: number
 
   constructor({
     algorand,
     registryAppId,
+    concurrency = 4,
     ghostAppId,
   }: {
     algorand: AlgorandClient
+    concurrency?: number
     registryAppId: number | bigint
     ghostAppId?: bigint
   }) {
     this.algorand = algorand
     this.registryAppId = BigInt(registryAppId)
-    this.ghostSDK = new RetiReaderSDK({
+    this.concurrency = concurrency
+    this.baseSDK = new RetiReaderSDK({
       algorand: this.algorand,
       readerAccount: "Y76M3MSY6DKBRHBL7C3NNDXGS5IIMQVQVUAB6MP4XEMMGVF2QWNPL226CA",
       ghostAppId,
@@ -64,7 +68,7 @@ export class RetiGhostSDK {
   async getValidatorConfig(validatorIds: number[] | bigint[]): Promise<ValidatorConfig[]> {
     console.log("Fetching validator configs for IDs:", validatorIds)
     const extraFee = (1000 * validatorIds.length).microAlgo()
-    return this.ghostSDK.getValidatorConfig({
+    return this.baseSDK.getValidatorConfig({
       methodArgsOrArgsArray: { registryAppId: this.registryAppId, validatorIds },
       extraMethodCallArgs: { extraFee },
     })
@@ -74,7 +78,7 @@ export class RetiGhostSDK {
   async getValidatorStates(validatorIds: number[] | bigint[]): Promise<ValidatorCurState[]> {
     console.log("Fetching validator states for IDs:", validatorIds)
     const extraFee = (1000 * validatorIds.length).microAlgo()
-    return this.ghostSDK.getValidatorStates({
+    return this.baseSDK.getValidatorStates({
       methodArgsOrArgsArray: { registryAppId: this.registryAppId, validatorIds },
       extraMethodCallArgs: { extraFee },
     })
@@ -88,7 +92,7 @@ export class RetiGhostSDK {
   @chunked(127)
   private async _internal_getPoolInfo(validatorIds: number[] | bigint[]): Promise<ValidatorPoolInfo[]> {
     const extraFee = (1000 * validatorIds.length).microAlgo()
-    return this.ghostSDK.getPools({
+    return this.baseSDK.getPools({
       methodArgsOrArgsArray: { registryAppId: this.registryAppId, validatorIds },
       extraMethodCallArgs: { extraFee },
     })
@@ -118,15 +122,16 @@ export class RetiGhostSDK {
   @chunked(127)
   async getNodePoolAssignments(validatorIds: number[] | bigint[]): Promise<NodePoolAssignmentConfig[]> {
     const extraFee = (1000 * validatorIds.length).microAlgo()
-    return this.ghostSDK.getNodePoolAssignments({
+    return this.baseSDK.getNodePoolAssignments({
       methodArgsOrArgsArray: { registryAppId: this.registryAppId, validatorIds },
       extraMethodCallArgs: { extraFee },
     })
   }
 
+  @chunked(64)
   async getValidators(validatorIds: number[]): Promise<Validator[]> {
     const extraFee = (validatorIds.length * 4000).microAlgo()
-    const data = await this.ghostSDK.getValidators({
+    const data = await this.baseSDK.getValidators({
       methodArgsOrArgsArray: { registryAppId: this.registryAppId, validatorIds },
       extraMethodCallArgs: { extraFee },
     })
@@ -140,7 +145,7 @@ export class RetiGhostSDK {
       16,
     )
     const extraMethodCallArgs = args.map((chunk) => ({ accessReferences: chunk.map((id) => ({ appId: BigInt(id) })) }))
-    return this.ghostSDK.getAlgodVersion({
+    return this.baseSDK.getAlgodVersion({
       methodArgsOrArgsArray: args.map((chunk) => ({ poolAppIds: chunk })),
       extraMethodCallArgs,
     })
@@ -150,7 +155,7 @@ export class RetiGhostSDK {
     // viable alternative would be to do validity = 1
     // but we will fetch lastRound to override params cache
     const { lastRound } = await this.algorand.client.algod.status().do()
-    return this.ghostSDK.getBlockTimestamps({
+    return this.baseSDK.getBlockTimestamps({
       methodArgsOrArgsArray: { num },
       extraMethodCallArgs: { firstValidRound: lastRound, lastValidRound: lastRound + 3n },
     })
@@ -159,7 +164,7 @@ export class RetiGhostSDK {
   @chunked(128)
   async getAssets(assetIds: number[] | bigint[]): Promise<AssetInfo[]> {
     const assets: AssetInfo[] = []
-    const data = await this.ghostSDK.getAssets({
+    const data = await this.baseSDK.getAssets({
       methodArgsOrArgsArray: { assetIds },
     })
     for (const asset of data) {
