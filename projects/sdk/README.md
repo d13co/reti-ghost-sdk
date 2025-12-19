@@ -35,12 +35,9 @@ Node.js 22+ is required for development (upstream puya-ts requirement).
 import { AlgorandClient } from "@algorandfoundation/algokit-utils"
 import { RetiGhostSDK } from "reti-ghost-sdk"
 
-// Mainnet registry app id
-const registryAppId = 2714516089n
-
 const sdk = new RetiGhostSDK({
   algorand: AlgorandClient.mainNet(),
-  registryAppId,
+  registryAppId: 2714516089n, // Mainnet
   // Optional: use a deployed reader contract instead of ghost simulation
   // ghostAppId: 123456789013n,
 })
@@ -145,7 +142,7 @@ By default, calls are simulated against a ghost (non-deployed) reader contract. 
 
 - Use deployed reader: pass `ghostAppId` in the constructor:
 ```ts
-const sdk = new RetiGhostSDK({ algorand, registryAppId, ghostAppId: 752173746n })
+const sdk = new RetiGhostSDK({ algorand, registryAppId, ghostAppId: 123456789013n })
 ```
 
 ## Limits and Performance Notes
