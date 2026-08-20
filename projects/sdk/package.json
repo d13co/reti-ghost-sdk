@@ -1,6 +1,6 @@
 {
   "name": "reti-ghost-sdk",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "",
   "repository": {
     "type": "git",
@@ -10,28 +10,45 @@
     "url": "https://github.com/d13co/reti-ghost-sdk/issues"
   },
   "homepage": "https://github.com/d13co/reti-ghost-sdk/tree/main/projects/sdk#readme",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/cjs/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
   "files": [
     "dist/"
   ],
   "scripts": {
     "prebuild": "cp ../contracts/smart_contracts/artifacts/reti_reader/RetiReaderSDK.ts src/generated",
-    "build": "tsc"
+    "clean": "rm -rf dist",
+    "build": "pnpm run clean && pnpm run build:esm && pnpm run build:cjs && pnpm run build:dist-pkg",
+    "build:esm": "tsc -p tsconfig.esm.json",
+    "build:cjs": "tsc -p tsconfig.cjs.json",
+    "build:dist-pkg": "node scripts/write-dist-package-json.mjs"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "packageManager": "pnpm@10.11.0",
-  "dependencies": {
-    "p-map": "^7.0.4"
-  },
   "peerDependencies": {
     "@algorandfoundation/algokit-utils": "^9.2.0",
     "algosdk": "^3.5.2"
   },
   "devDependencies": {
     "@types/node": "^25.0.3",
-    "tsx": "^4.21.0"
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.3"
   }
 }

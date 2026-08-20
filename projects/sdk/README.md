@@ -175,12 +175,17 @@ For deeper background on the approach and trade-offs, see the [Ghostkit README](
 
 ## Development
 
-This package ships prebuilt types and JS from `dist/`. The generated reader client lives in `src/generated/` and is copied from the contracts project during build.
+This package ships prebuilt types and JS from `dist/`, in both ESM (`dist/esm/`) and
+CommonJS (`dist/cjs/`) form, so it works with `import` and `require` alike. Consumers get
+the right one automatically via the `exports` map. The generated reader client lives in
+`src/generated/` and is copied from the contracts project during build.
 
 - Build
 ```fish
 pnpm -w --filter reti-ghost-sdk build
 ```
+
+`build` compiles both formats. To run just one: `build:esm` or `build:cjs`.
 
 - Examples: see `projects/sdk/src/examples/` in this repo for scripts demonstrating usage on MainNet and TestNet.
 

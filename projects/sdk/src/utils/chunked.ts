@@ -1,4 +1,4 @@
-import pMap from "p-map"
+import { pMap } from "./p-map.js"
 import { chunk } from "./chunk.js"
 
 /**
