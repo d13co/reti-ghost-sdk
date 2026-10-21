@@ -1,7 +1,7 @@
 {
   "name": "reti-ghost-sdk",
-  "version": "0.2.0",
-  "description": "",
+  "version": "0.3.0-dt.5",
+  "description": "Read-only SDK for the Reti staking registry, with reads at any past round on a dtalgorand node",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/d13co/reti-ghost-sdk.git"
@@ -9,7 +9,7 @@
   "bugs": {
     "url": "https://github.com/d13co/reti-ghost-sdk/issues"
   },
-  "homepage": "https://github.com/d13co/reti-ghost-sdk/tree/main/projects/sdk#readme",
+  "homepage": "https://github.com/d13co/reti-ghost-sdk/tree/dtalgorand/projects/sdk#readme",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "types": "./dist/cjs/index.d.ts",
@@ -30,25 +30,38 @@
   "files": [
     "dist/"
   ],
+  "publishConfig": {
+    "tag": "dt"
+  },
   "scripts": {
-    "prebuild": "cp ../contracts/smart_contracts/artifacts/reti_reader/RetiReaderSDK.ts src/generated",
+    "prebuild": "cp ../contracts/smart_contracts/artifacts/reti_reader/RetiReaderSDK.ts src/generated && node scripts/strip-app-spec-source.mjs src/generated/RetiReaderSDK.ts",
     "clean": "rm -rf dist",
     "build": "pnpm run clean && pnpm run build:esm && pnpm run build:cjs && pnpm run build:dist-pkg",
     "build:esm": "tsc -p tsconfig.esm.json",
     "build:cjs": "tsc -p tsconfig.cjs.json",
-    "build:dist-pkg": "node scripts/write-dist-package-json.mjs"
+    "build:dist-pkg": "node scripts/write-dist-package-json.mjs",
+    "prepublishOnly": "node scripts/check-publish-tag.mjs && pnpm run build"
   },
-  "keywords": [],
+  "keywords": [
+    "algorand",
+    "reti",
+    "staking",
+    "ghostkit",
+    "dtalgorand",
+    "time-travel"
+  ],
   "author": "",
   "license": "MIT",
   "packageManager": "pnpm@10.11.0",
   "peerDependencies": {
-    "@algorandfoundation/algokit-utils": "^9.2.0",
-    "algosdk": "^3.5.2"
+    "@algorandfoundation/algokit-utils": ">=9.2.0",
+    "algosdk": ">=3.5.2"
   },
   "devDependencies": {
     "@types/node": "^25.0.3",
     "tsx": "^4.21.0",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "@algorandfoundation/algokit-utils": "file:../../vendor/algorandfoundation-algokit-utils-9.2.3-dt.2.tgz",
+    "algosdk": "file:../../vendor/algosdk-3.8.0-dt.2.tgz"
   }
 }

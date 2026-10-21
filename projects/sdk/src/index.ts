@@ -1,19 +1,72 @@
-import { AlgorandClient } from "@algorandfoundation/algokit-utils"
+import { microAlgo, type AlgorandClient } from "@algorandfoundation/algokit-utils"
+import { ALGORAND_ZERO_ADDRESS_STRING } from "algosdk"
 import {
-  Validator,
-  NodePoolAssignmentConfig,
   RetiReaderSDK,
+  type AccountBalance,
+  type AssetHolding,
+  type GhostkitNode,
+  type GhostkitSDKParams,
+  type MbrAmountsAndProtocolConstraints,
+  type NodePoolAssignmentConfig,
+  type PoolState as RawPoolState,
+  type PoolTotals,
+  type StakerPosition,
+  type Validator,
+  type ValidatorConfig,
+  type ValidatorCurState,
+  type ValidatorPoolInfo,
+  type ValidatorTotals,
+} from "./generated/RetiReaderSDK.js"
+import { bytesToBigInt, decodeStakersBox, type PoolStaker } from "./decode.js"
+import { abortable, raceAbort, sim, simOptions } from "./abort.js"
+import { FutureRoundError, isDTUnsupported, RetiNotDeployedError, TimeTravelUnavailableError } from "./errors.js"
+import { RoundClock, type RoundAtOptions, type RoundTime } from "./history/dateToRound.js"
+import { getChangeRounds, type TimelineOptions, type TimelinePage, type TimelineTarget } from "./history/timeline.js"
+import { MAX_SERIES_POINTS, seriesRounds, type SeriesPoint, type SeriesRounds } from "./history/series.js"
+
+export type {
+  AccountBalance,
+  AssetHolding,
+  GhostkitNode,
+  MbrAmountsAndProtocolConstraints,
+  NodePoolAssignmentConfig,
+  PoolTotals,
+  StakerPosition,
+  Validator,
   ValidatorConfig,
   ValidatorCurState,
   ValidatorPoolInfo,
-  AssetInfo as AssetInfoBase,
-  MbrAmountsAndProtocolConstraints,
-} from "./generated/RetiReaderSDK.js"
-import { chunked } from "./utils/chunked.js"
-import { chunk } from "./utils/chunk.js"
-import { ALGORAND_ZERO_ADDRESS_STRING } from "algosdk"
+  ValidatorTotals,
+}
+export type { StakedInfo } from "./generated/RetiReaderSDK.js"
+export { GhostkitError } from "./generated/RetiReaderSDK.js"
+export { FutureRoundError, RetiNotDeployedError, TimeTravelUnavailableError, isDTUnsupported } from "./errors.js"
+export { RoundClock, type RoundAtOptions, type RoundTime } from "./history/dateToRound.js"
+export { MAX_UNBOUNDED_CHANGES, type Change, type TimelineOptions, type TimelinePage, type TimelineTarget } from "./history/timeline.js"
+export { MAX_SERIES_POINTS, seriesRounds, type SeriesPoint, type SeriesRounds } from "./history/series.js"
+export type { PoolStaker } from "./decode.js"
 
-export { Validator } from "./generated/RetiReaderSDK.js"
+/** Per-call read options. */
+export type ReadOptions = {
+  /**
+   * Read the state as of the end of this round instead of the latest. Overrides the SDK's own `round` (see `atRound`).
+   *
+   * On a node without time travel, a round within 20 of the latest reads the latest state, and an older round throws
+   * `TimeTravelUnavailableError`. A round before the registry was created throws `RetiNotDeployedError`, and one the
+   * node hasn't reached yet `FutureRoundError`.
+   */
+  round?: number | bigint
+  /**
+   * Aborts the read: its requests are cancelled and it rejects with the signal's reason (a `DOMException` named
+   * `AbortError` by default). Cancelling needs the dtalgorand fork of algokit-utils 9.2.3-dt.2 or later; with an older
+   * one the read still rejects on abort, but its requests run to the end. Reads other calls share (node detection, the
+   * registry's creation round, the node's status) carry on for them.
+   */
+  signal?: AbortSignal
+}
+
+/** Options for reads that only take a signal. */
+export type SignalOptions = Pick<ReadOptions, "signal">
 
 export type PoolBalanceAndLastPayout = {
   balance: bigint
@@ -36,233 +89,691 @@ export type AssetInfo =
       }
     }
 
+/** A staking pool's global state and account balance. */
+export type PoolState = Omit<RawPoolState, "stakeAccumulator" | "ewma"> & {
+  /** uint128 accumulator of stake over the current bin */
+  stakeAccumulator: bigint
+  /** The pool's exponentially weighted moving average APY, as the UI's `fetchPoolApy` reads it (0 if unset) */
+  ewma: bigint
+}
+
+/** The registry's global totals. */
+export type RegistryTotals = {
+  numValidators: number
+  numStakers: bigint
+  staked: bigint
+}
+
+/** An account and asset, for `getAssetHoldings`. */
+export type AccountAssetRef = { account: string; assetId: number | bigint }
+
+export type RetiGhostSDKParams = {
+  /** AlgoKit `AlgorandClient`. Past-round reads need the dtalgorand forks of algosdk and algokit-utils and a dtalgorand node. */
+  algorand: AlgorandClient
+  /** Reti registry app id: 2714516089 on MainNet */
+  registryAppId: number | bigint
+  /** Default round for every read; omit to read the latest state. See `atRound`. */
+  round?: number | bigint
+  /**
+   * A deployed reader app to call for reads at the latest round, instead of creating the ghost on the fly. Reads at a
+   * past round always use the ghost, since a deployed reader may not have existed (or had other code) then.
+   */
+  ghostAppId?: bigint
+  /** Funded account the reads are simulated from; defaults to the network's fee sink, which is funded at every round. */
+  readerAccount?: string
+  /** How to simulate; see ghostkit. `auto` (default) uses a dtalgorand node's extended simulate when available. */
+  backend?: GhostkitSDKParams["backend"]
+  /**
+   * What each simulated group may spend on fees (it's never charged). Default 10 Algo, which covers 10,000 inner calls;
+   * the fee sink holds far more at every round.
+   */
+  ghostFee?: GhostkitSDKParams["ghostFee"]
+  /** Milliseconds reads at the latest round reuse suggested params for (default 3,000) */
+  cacheParamsTimeout?: number
+  /** Log each simulate */
+  debug?: boolean
+}
+
+/** The default `ghostFee`: 10 Algo per group. */
+const DEFAULT_GHOST_FEE = 10_000_000n
+
+/**
+ * How far from its latest round a node without time travel takes a round, reading the latest state for it. Such a node
+ * can only read the latest state; this lets a round taken from `status()` be used for about a minute.
+ */
+const STOCK_ROUND_SLACK = 20n
+
+/** How long a read of the node's latest round is reused for rounds that need it to be fresh. */
+const STATUS_MAX_AGE_MS = 1_000
+
+/** The furthest back a program can read block headers: `block` takes rounds up to 1,000 before the current one. */
+const BLOCK_LOOKBACK = 1000n
+
+/**
+ * For calls with no inner transactions: pay just the minimum fee, so they also work at early rounds, when the fee sink
+ * held too little for the default `ghostFee`.
+ */
+const MIN_FEE = { extraFee: microAlgo(0) }
+
+/**
+ * Read-only SDK for the Reti staking registry. Every read takes `{ round }` to read the state as of that round, or
+ * pin a round for all reads with `atRound`.
+ */
 export class RetiGhostSDK {
   static baseSDK = RetiReaderSDK
 
-  public algorand: AlgorandClient
-  public registryAppId: bigint
-  public baseSDK: RetiReaderSDK
-  public concurrency: number
+  public readonly algorand: AlgorandClient
+  public readonly registryAppId: bigint
+  /** Default round for every read; undefined reads the latest state. */
+  public readonly round?: bigint
+  /** The ghost reader, simulated on the fly at any round. */
+  public readonly ghost: RetiReaderSDK
+  /** The reader for latest-state reads: the deployed reader if `ghostAppId` is set, else the ghost. */
+  public readonly baseSDK: RetiReaderSDK
+  /** Round ↔ timestamp lookups, from block headers. */
+  public readonly clock: RoundClock
+
+  /** State shared with the SDKs `atRound` returns. */
+  private shared: {
+    creationRound?: Promise<bigint | undefined>
+    /** The node's latest round when last read; rounds only grow, so any round up to it exists. */
+    latest?: { round: bigint; at: number }
+    statusRead?: Promise<bigint>
+  }
 
   constructor({
     algorand,
     registryAppId,
-    concurrency = 4,
+    round,
     ghostAppId,
-  }: {
-    algorand: AlgorandClient
-    concurrency?: number
-    registryAppId: number | bigint
-    ghostAppId?: bigint
-  }) {
+    readerAccount,
+    backend,
+    ghostFee = DEFAULT_GHOST_FEE,
+    cacheParamsTimeout,
+    debug,
+  }: RetiGhostSDKParams) {
     this.algorand = algorand
     this.registryAppId = BigInt(registryAppId)
-    this.concurrency = concurrency
-    this.baseSDK = new RetiReaderSDK({
-      algorand: this.algorand,
-      readerAccount: "Y76M3MSY6DKBRHBL7C3NNDXGS5IIMQVQVUAB6MP4XEMMGVF2QWNPL226CA",
-      ghostAppId,
-    })
+    this.round = round === undefined ? undefined : BigInt(round)
+    const params: GhostkitSDKParams = { algorand, readerAccount, backend, ghostFee, cacheParamsTimeout, debug }
+    this.ghost = new RetiReaderSDK(params)
+    this.baseSDK = ghostAppId ? new RetiReaderSDK({ ...params, ghostAppId }) : this.ghost
+    this.clock = new RoundClock(algorand)
+    this.shared = {}
   }
 
-  async getNumValidators(): Promise<number> {
-    /**
-     * Reads the number of validators from the registry app global state.
-     * @returns Number of validators in the registry.
-     */
-    const { numV } = await this.algorand.app.getGlobalState(this.registryAppId)
-    return Number(numV.value)
+  /** The same SDK with every read as of the end of `round`; `undefined` reads the latest state. */
+  atRound(round: number | bigint | undefined): RetiGhostSDK {
+    return Object.assign(Object.create(this) as RetiGhostSDK, { round: round === undefined ? undefined : BigInt(round) })
   }
 
-  /**
-   * Get the MBR amounts and protocol constraints from Reti Registry
-   * @returns MbrAmountsAndProtocolConstraints
-   */
-  async getMbrAmountsAndProtocolConstraints(): Promise<MbrAmountsAndProtocolConstraints> {
-    const extraFee = (2000).microAlgo()
-    const [data] = await this.baseSDK.getMbrAmountsAndProtocolConstraints({
-      methodArgsOrArgsArray: { registryAppId: this.registryAppId },
-      extraMethodCallArgs: { extraFee },
-    })
-    return data
+  // ---------------------------------------------------------------------------------------------------------------
+  // Node
+
+  /** What kind of node this is, and its simulate limits. */
+  getNode(): Promise<GhostkitNode> {
+    return this.ghost.getNode()
+  }
+
+  /** Whether reads at any round since genesis work: a dtalgorand node with time travel, and the dtalgorand forks. */
+  async supportsTimeTravel(): Promise<boolean> {
+    const node = await this.getNode()
+    return node.kind === "dt" && node.limits.timeTravel
   }
 
   /**
-   * Fetch multiple validator configs efficiently.\
-   * Handles chunking internally with chunk size of 127.
-   * @param validatorIds
-   * @returns Array of `ValidatorConfig`, preserving input order.
+   * The most rounds the node simulates in one request, which bounds what one `getTimestampsAtRounds` request covers
+   * (more are split across requests). 0 if it simulates one round per request: not a dtalgorand node.
    */
-  @chunked(127)
-  async getValidatorConfig(validatorIds: number[] | bigint[]): Promise<ValidatorConfig[]> {
-    console.log("Fetching validator configs for IDs:", validatorIds)
-    const extraFee = (1000 * validatorIds.length).microAlgo()
-    return this.baseSDK.getValidatorConfig({
-      methodArgsOrArgsArray: { registryAppId: this.registryAppId, validatorIds },
-      extraMethodCallArgs: { extraFee },
-    })
-  }
-
-  @chunked(127)
-  async getValidatorStates(validatorIds: number[] | bigint[]): Promise<ValidatorCurState[]> {
-    /**
-     * Fetch multiple validators' current states.
-     * Handles chunking internally with chunk size of 127.
-     * Respects per-call concurrency set via the SDK constructor.
-     * @param validatorIds Array of validator IDs.
-     * @returns Array of `ValidatorCurState`, preserving input order.
-     */
-    console.log("Fetching validator states for IDs:", validatorIds)
-    const extraFee = (1000 * validatorIds.length).microAlgo()
-    return this.baseSDK.getValidatorStates({
-      methodArgsOrArgsArray: { registryAppId: this.registryAppId, validatorIds },
-      extraMethodCallArgs: { extraFee },
-    })
-  }
-
-  async getPools(validatorIds: number[] | bigint[]): Promise<ValidatorPoolInfo["poolInfo"][][]> {
-    /**
-     * Fetch pool info arrays per validator.
-     * Internally calls a chunked reader method and groups results by validator ID.
-     * @param validatorIds Array of validator IDs.
-     * @returns Array of arrays of pool info tuples per validator (input order preserved).
-     */
-    const results = await this._internal_getPoolInfo(validatorIds)
-    return validatorIds.map((vid) => results.filter((r) => r.validatorId === BigInt(vid)).map((r) => r.poolInfo))
-  }
-
-  @chunked(127)
-  private async _internal_getPoolInfo(validatorIds: number[] | bigint[]): Promise<ValidatorPoolInfo[]> {
-    /**
-     * Internal chunked reader call for pool info.
-     * Chunk size 127; returns flattened `ValidatorPoolInfo` entries.
-     * @param validatorIds Array of validator IDs.
-     * @returns Array of `{ validatorId, poolInfo }` entries (flattened).
-     */
-    const extraFee = (1000 * validatorIds.length).microAlgo()
-    return this.baseSDK.getPools({
-      methodArgsOrArgsArray: { registryAppId: this.registryAppId, validatorIds },
-      extraMethodCallArgs: { extraFee },
-    })
-  }
-
-  @chunked(127)
-  async getNodePoolAssignments(validatorIds: number[] | bigint[]): Promise<NodePoolAssignmentConfig[]> {
-    /**
-     * Fetch node→pool assignment config for each validator.
-     * Handles chunking internally with chunk size of 127.
-     * @param validatorIds Array of validator IDs.
-     * @returns Array of `NodePoolAssignmentConfig`, preserving input order.
-     */
-    const extraFee = (1000 * validatorIds.length).microAlgo()
-    return this.baseSDK.getNodePoolAssignments({
-      methodArgsOrArgsArray: { registryAppId: this.registryAppId, validatorIds },
-      extraMethodCallArgs: { extraFee },
-    })
+  async getMaxRounds(): Promise<number> {
+    return (await this.getNode()).limits.maxRounds
   }
 
   /**
-   * Fetch multiple validators' config/state/pools/nodePoolAssignments efficiently. Handles chunking internally with chunk size of 64.
-   * @param validatorIds
-   * @returns Validator[] { config: ValidatorConfig, curState: ValidatorCurState, pools: ValidatorPoolInfo["poolInfo"][], nodePoolAssignment: NodePoolAssignmentConfig }
+   * The round the registry was created at, the earliest round its state can be read at. Undefined if the node can't
+   * tell (not a dtalgorand node). Cached.
    */
-  @chunked(64)
-  async getValidators(validatorIds: number[]): Promise<Validator[]> {
-    /**
-     * Fetch validators' config, state, poolInfo[], and nodeAssignment in one aggregated call.
-     * Handles chunking internally with chunk size of 64; per-call concurrency applies.
-     * Preserves the input order in the returned array.
-     * @param validatorIds Array of validator IDs.
-     * @returns Array of `Validator` where each item contains `{ config, state, poolInfo, nodeAssignment }`.
-     */
-    const extraFee = (validatorIds.length * 4000).microAlgo()
-    const data = await this.baseSDK.getValidators({
-      methodArgsOrArgsArray: { registryAppId: this.registryAppId, validatorIds },
-      extraMethodCallArgs: { extraFee },
-    })
-    return data
-  }
-
-  @chunked(255)
-  async getPoolAlgodVersions(poolAppIds: number[] | bigint[]): Promise<string[]> {
-    /**
-     * Fetch `algod` version strings for many pool apps.
-     * Uses app references for speed; chunk size 255.
-     * @param poolAppIds Array of pool application IDs.
-     * @returns Array of version strings, preserving input order.
-     */
-    const args = chunk(
-      poolAppIds.map((p) => Number(p)),
-      16,
-    )
-    const extraMethodCallArgs = args.map((chunk) => ({ accessReferences: chunk.map((id) => ({ appId: BigInt(id) })) }))
-    return this.baseSDK.getAlgodVersion({
-      methodArgsOrArgsArray: args.map((chunk) => ({ poolAppIds: chunk })),
-      extraMethodCallArgs,
-    })
-  }
-
-  async getBlockTimestamps(num: number): Promise<bigint[]> {
-    /**
-     * Fetch the timestamps of the last `num` blocks via the ghost reader.
-     * Aligns validity window to current status round to avoid stale params cache.
-     * @param num Number of blocks to read.
-     * @returns Array of block timestamps as bigints.
-     */
-    // viable alternative would be to do validity = 1
-    // but we will fetch lastRound to override params cache
-    const { lastRound } = await this.algorand.client.algod.status().do()
-    return this.baseSDK.getBlockTimestamps({
-      methodArgsOrArgsArray: { num },
-      extraMethodCallArgs: { firstValidRound: lastRound, lastValidRound: lastRound + 3n },
-    })
-  }
-
-  @chunked(128)
-  async getAssets(assetIds: number[] | bigint[]): Promise<AssetInfo[]> {
-    /**
-     * Read asset metadata for many ASA IDs and return a simplified union.
-     * `{ deleted: true }` when asset is deleted or found; otherwise basic params.
-     * Chunk size 128; per-call concurrency applies.
-     * @param assetIds Array of asset IDs.
-     * @returns Array of `AssetInfo` union values.
-     */
-    const assets: AssetInfo[] = []
-    const data = await this.baseSDK.getAssets({
-      methodArgsOrArgsArray: { assetIds },
-    })
-    for (const asset of data) {
-      if (asset.creator === ALGORAND_ZERO_ADDRESS_STRING) {
-        assets.push({ index: asset.assetId, deleted: true })
-      } else {
-        assets.push({
-          index: asset.assetId,
-          params: {
-            creator: asset.creator,
-            total: asset.total,
-            decimals: asset.decimals,
-            unitName: asset.unitName,
-            name: asset.name,
-          },
+  getRegistryCreationRound(): Promise<bigint | undefined> {
+    if (!this.shared.creationRound) {
+      // `algorand.dt` only exists on the dtalgorand fork of algokit-utils
+      const dt = (this.algorand as Partial<Pick<AlgorandClient, "dt">>).dt
+      if (!dt) return Promise.resolve(undefined)
+      const lookup = dt
+        .getAppVersions(this.registryAppId, { order: "asc", limit: 1 })
+        .then(({ versions }) => versions[0]?.round)
+        .catch((e) => {
+          if (isDTUnsupported(e)) return undefined
+          throw e
         })
-      }
+      lookup.catch(() => {
+        if (this.shared.creationRound === lookup) this.shared.creationRound = undefined
+      })
+      this.shared.creationRound = lookup
     }
-    return assets
+    return this.shared.creationRound
   }
 
-  @chunked(128)
-  async getPoolBalancesAndLastPayouts(poolAppIds: number[] | bigint[]): Promise<PoolBalanceAndLastPayout[]> {
-    /**
-     * Read pool balances and last payout time for many pool apps.
-     * Chunk size 128; returns a simple object per pool app ID in input order.
-     * @param poolAppIds Array of pool application IDs.
-     * @returns Array of `{ balance, lastPayout }` objects, with input order preserved.
-     */
-    const data = await this.baseSDK.getPoolBalancesAndLastPayouts({
-      methodArgsOrArgsArray: { poolAppIds },
+  // ---------------------------------------------------------------------------------------------------------------
+  // Registry
+
+  /** The number of validators in the registry. */
+  async getNumValidators(options: ReadOptions = {}): Promise<number> {
+    return (await this.getRegistryTotals(options)).numValidators
+  }
+
+  /** The registry's validator count, total stakers and total stake, from its global state. */
+  async getRegistryTotals(options: ReadOptions = {}): Promise<RegistryTotals> {
+    const round = await this.roundFor(options)
+    const { signal } = options
+    const state = await this.algorand.app.getGlobalState(this.registryAppId, {
+      ...(round !== undefined ? { round } : {}),
+      ...(signal ? { signal } : {}),
     })
-    return data.map(([balance, lastPayout]) => ({
-      balance, lastPayout
-    }))
+    const uint = (key: string) => {
+      const value = state[key]?.value
+      if (value === undefined) throw new Error(`${key} not found in the registry's global state${round !== undefined ? ` at round ${round}` : ""}`)
+      return BigInt(value)
+    }
+    return { numValidators: Number(uint("numV")), numStakers: uint("numStakers"), staked: uint("staked") }
+  }
+
+  /** The registry's MBR amounts and protocol constraints. */
+  async getMbrAmountsAndProtocolConstraints(options: ReadOptions = {}): Promise<MbrAmountsAndProtocolConstraints> {
+    const [data] = await this.read(options, (r) =>
+      r.getMbrAmountsAndProtocolConstraints({
+        methodArgsOrArgsArray: { registryAppId: this.registryAppId },
+        ...sim(options),
+      }),
+    )
+    return data
+  }
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Validators
+
+  /** Each validator's config, in input order. */
+  async getValidatorConfig(validatorIds: (number | bigint)[], options: ReadOptions = {}): Promise<ValidatorConfig[]> {
+    return this.read(options, (r) =>
+      r.getValidatorConfig({
+        methodArgsOrArgsArray: { registryAppId: this.registryAppId, validatorIds: validatorIds.map(BigInt) },
+        ...sim(options),
+      }),
+    )
+  }
+
+  /** Each validator's current state, in input order. */
+  async getValidatorStates(validatorIds: (number | bigint)[], options: ReadOptions = {}): Promise<ValidatorCurState[]> {
+    return this.read(options, (r) =>
+      r.getValidatorStates({
+        methodArgsOrArgsArray: { registryAppId: this.registryAppId, validatorIds: validatorIds.map(BigInt) },
+        ...sim(options),
+      }),
+    )
+  }
+
+  /** Each validator's pools, in input order. */
+  async getPools(validatorIds: (number | bigint)[], options: ReadOptions = {}): Promise<ValidatorPoolInfo["poolInfo"][][]> {
+    const ids = validatorIds.map(BigInt)
+    const results = await this.read(options, (r) =>
+      r.getPools({
+        methodArgsOrArgsArray: { registryAppId: this.registryAppId, validatorIds: ids },
+        ...sim(options),
+      }),
+    )
+    const byValidator = new Map<bigint, ValidatorPoolInfo["poolInfo"][]>()
+    for (const { validatorId, poolInfo } of results) {
+      let pools = byValidator.get(validatorId)
+      if (!pools) byValidator.set(validatorId, (pools = []))
+      pools.push(poolInfo)
+    }
+    return ids.map((id) => byValidator.get(id) ?? [])
+  }
+
+  /** Each validator's node to pool assignments, in input order. */
+  async getNodePoolAssignments(validatorIds: (number | bigint)[], options: ReadOptions = {}): Promise<NodePoolAssignmentConfig[]> {
+    return this.read(options, (r) =>
+      r.getNodePoolAssignments({
+        methodArgsOrArgsArray: { registryAppId: this.registryAppId, validatorIds: validatorIds.map(BigInt) },
+        ...sim(options),
+      }),
+    )
+  }
+
+  /** Each validator's config, state, pools and node assignments, in input order. */
+  async getValidators(validatorIds: (number | bigint)[], options: ReadOptions = {}): Promise<Validator[]> {
+    return this.read(options, (r) =>
+      r.getValidators({
+        methodArgsOrArgsArray: { registryAppId: this.registryAppId, validatorIds: validatorIds.map(BigInt) },
+        ...sim(options),
+      }),
+    )
+  }
+
+  /** Each validator's pool count, stakers and stake, in input order: a small read, made for charts. */
+  async getValidatorTotals(validatorIds: (number | bigint)[], options: ReadOptions = {}): Promise<ValidatorTotals[]> {
+    return this.read(options, (r) =>
+      r.getValidatorTotals({
+        methodArgsOrArgsArray: { registryAppId: this.registryAppId, validatorIds: validatorIds.map(BigInt) },
+        ...sim(options),
+      }),
+    )
+  }
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Pools
+
+  /** Each pool's global state and account balance, in input order. */
+  async getPoolStates(poolAppIds: (number | bigint)[], options: ReadOptions = {}): Promise<PoolState[]> {
+    const states = await this.read(options, (r) =>
+      r.getPoolStates({ methodArgsOrArgsArray: { pools: poolAppIds.map(BigInt) }, ...sim(options) }),
+    )
+    return states.map((s) => ({ ...s, stakeAccumulator: bytesToBigInt(s.stakeAccumulator), ewma: bytesToBigInt(s.ewma) }))
+  }
+
+  /** Each pool's stakers and stake, in input order: a small read, made for charts. */
+  async getPoolTotals(poolAppIds: (number | bigint)[], options: ReadOptions = {}): Promise<PoolTotals[]> {
+    return this.read(options, (r) => r.getPoolTotals({ methodArgsOrArgsArray: { pools: poolAppIds.map(BigInt) }, ...sim(options) }))
+  }
+
+  /** Each pool's balance and last payout round, in input order. */
+  async getPoolBalancesAndLastPayouts(poolAppIds: (number | bigint)[], options: ReadOptions = {}): Promise<PoolBalanceAndLastPayout[]> {
+    const data = await this.read(options, (r) =>
+      r.getPoolBalancesAndLastPayouts({
+        methodArgsOrArgsArray: { poolAppIds: poolAppIds.map(BigInt) },
+        ...sim(options),
+      }),
+    )
+    return data.map(([balance, lastPayout]) => ({ balance, lastPayout }))
+  }
+
+  /** Each pool's reported algod version, or "" if it has none, in input order. */
+  async getPoolAlgodVersions(poolAppIds: (number | bigint)[], options: ReadOptions = {}): Promise<string[]> {
+    return this.read(options, (r) => r.getAlgodVersion({ methodArgsOrArgsArray: { poolAppIds: poolAppIds.map(BigInt) }, ...sim(options) }))
+  }
+
+  /**
+   * The stakers of a pool, from its `stakers` box (one REST read). Empty slots are left out; each entry keeps its slot.
+   * An empty list if the pool or its box doesn't exist at the round.
+   */
+  async getPoolStakers(poolAppId: number | bigint, options: ReadOptions = {}): Promise<PoolStaker[]> {
+    const round = await this.roundFor(options)
+    const { signal } = options
+    try {
+      const box = await this.algorand.app.getBoxValue(BigInt(poolAppId), "stakers", {
+        ...(round !== undefined ? { round } : {}),
+        ...(signal ? { signal } : {}),
+      })
+      return decodeStakersBox(box)
+    } catch (e) {
+      signal?.throwIfAborted()
+      if ((e as { status?: number })?.status === 404 || /not found|does not exist/i.test(String((e as Error)?.message))) return []
+      throw e
+    }
+  }
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Stakers and accounts
+
+  /** Every position of each staker: one entry per pool the staker is in, stakers in input order. */
+  async getStakerPositions(stakers: string[], options: ReadOptions = {}): Promise<StakerPosition[]> {
+    return this.read(options, (r) =>
+      r.getStakerPositions({
+        methodArgsOrArgsArray: { registryAppId: this.registryAppId, stakers },
+        ...sim(options),
+      }),
+    )
+  }
+
+  /** Each account's balance and minimum balance, in input order; zero for accounts that don't exist. */
+  async getAccountBalances(accounts: string[], options: ReadOptions = {}): Promise<AccountBalance[]> {
+    return this.read(options, (r) => r.getAccountBalances({ methodArgsOrArgsArray: { accounts }, ...sim(options) }))
+  }
+
+  /** Each account's holding of an asset, in input order. */
+  async getAssetHoldings(holdings: AccountAssetRef[], options: ReadOptions = {}): Promise<AssetHolding[]> {
+    return this.read(options, (r) =>
+      r.getAssetHoldings({
+        methodArgsOrArgsArray: { holdings: holdings.map(({ account, assetId }): [string, bigint] => [account, BigInt(assetId)]) },
+        ...sim(options),
+      }),
+    )
+  }
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Assets and blocks
+
+  /** Each asset's basic params, or `deleted: true` if it doesn't exist, in input order. */
+  async getAssets(assetIds: (number | bigint)[], options: ReadOptions = {}): Promise<AssetInfo[]> {
+    const data = await this.read(options, (r) =>
+      r.getAssets({ methodArgsOrArgsArray: { assetIds: assetIds.map(BigInt) }, ...sim(options) }),
+    )
+    return data.map((asset): AssetInfo =>
+      asset.creator === ALGORAND_ZERO_ADDRESS_STRING
+        ? { index: asset.assetId, deleted: true }
+        : {
+            index: asset.assetId,
+            params: {
+              creator: asset.creator,
+              total: asset.total,
+              decimals: asset.decimals,
+              unitName: asset.unitName,
+              name: asset.name,
+            },
+          },
+    )
+  }
+
+  /**
+   * The timestamps of the `num` blocks before the round (the latest if none): rounds round - num to round - 1, oldest
+   * first. `num` can be at most 1,000, the furthest back a program can read block headers.
+   */
+  async getBlockTimestamps(num: number, options: ReadOptions = {}): Promise<bigint[]> {
+    // the method reads the rounds before its validity window, so it always needs a round: the latest, read fresh
+    const round = (await this.roundFor(options)) ?? (await raceAbort(this.latestRound(0n, 0), options.signal))
+    return abortable(options.signal, () =>
+      this.ghost.atRound(round).getBlockTimestamps({ methodArgsOrArgsArray: { num: BigInt(num) }, ...sim(options) }),
+    )
+  }
+
+  /**
+   * Each round's block timestamp, from one simulate per `getMaxRounds()` rounds on a dtalgorand node (rounds any
+   * distance apart). Rounds are deduplicated and sorted; a round that can't be read is `ok: false`. The timestamps are
+   * cached in `clock`.
+   */
+  async getTimestampsAtRounds(rounds: (number | bigint)[], options: SignalOptions = {}): Promise<SeriesPoint<number>[]> {
+    const list = seriesRounds(rounds, Infinity)
+    if (list.length === 0) return []
+    const results = await abortable(options.signal, () =>
+      this.ghost.atRounds(
+        list,
+        (s) => s.getRoundTimestamp({ methodArgsOrArgsArray: {}, extraMethodCallArgs: MIN_FEE }),
+        simOptions(options),
+      ),
+    )
+    // a node without extended simulate reports an abort as failed rounds
+    options.signal?.throwIfAborted()
+    return results.map((r): SeriesPoint<number> => {
+      if (!r.ok) return { round: r.round, ok: false, error: r.error }
+      const timestamp = Number(r.value[0])
+      this.clock.remember(r.round, timestamp)
+      return { round: r.round, ok: true, value: timestamp, timestamp }
+    })
+  }
+
+  /**
+   * The first round from `start` whose block timestamp is at or after `target`, scanning up to 1,000 rounds in one
+   * simulate (at `start + 1000`, or the latest round if that's sooner). Undefined if no round in that span reaches
+   * `target`, or `start` is past the latest round. The result is cached in `clock`.
+   *
+   * On a dtalgorand node that simulates several rounds per request, the node's status is read only when `start + 1000`
+   * (or `knownRound`) turns out not to exist yet.
+   *
+   * @param target A `Date`, or seconds since the epoch
+   * @param options.knownRound A round the caller knows the node has, such as the latest it has seen: the scan stops
+   * there, which avoids the status read and the failed attempt near the tip
+   * @param options.signal Aborts the scan (see `ReadOptions.signal`)
+   */
+  async firstRoundAtOrAfter(
+    start: number | bigint,
+    target: Date | number,
+    { knownRound, signal }: { knownRound?: number | bigint } & SignalOptions = {},
+  ): Promise<RoundTime | undefined> {
+    const from = BigInt(start)
+    if (from < 0n) throw new RangeError(`firstRoundAtOrAfter: start must not be negative`)
+    const seconds = target instanceof Date ? Math.ceil(target.getTime() / 1000) : Math.ceil(target)
+    const args = { start: from, target: BigInt(Math.max(0, seconds)) }
+    const end = from + BLOCK_LOOKBACK
+    const known = knownRound !== undefined ? BigInt(knownRound) : undefined
+
+    const node = await raceAbort(this.getNode(), signal)
+    const scanAt = (at: bigint) =>
+      abortable(signal, async () => {
+        if (node.limits.maxRounds > 0) {
+          // a request for several rounds fails a missing round in its own result; a single-round request gets an HTTP
+          // 500, which algokit-utils retries for ~14 s
+          const [result] = await this.ghost.atRounds(
+            [at],
+            (s) => s.firstRoundAtOrAfter({ methodArgsOrArgsArray: args, extraMethodCallArgs: MIN_FEE }),
+            simOptions({ signal }),
+          )
+          if (!result.ok) throw result.error
+          return result.value[0]
+        }
+        const [found] = await this.ghost
+          .atRound(at)
+          .firstRoundAtOrAfter({ methodArgsOrArgsArray: args, extraMethodCallArgs: MIN_FEE, ...sim({ signal }) })
+        return found
+      })
+    const latest = () => raceAbort(this.latestRound(0n, 0), signal)
+
+    let found: [bigint, bigint]
+    if (node.limits.maxRounds > 0 || (known !== undefined && known >= from)) {
+      const first = known !== undefined && known >= from && known < end ? known : end
+      try {
+        found = await scanAt(first)
+      } catch (e) {
+        // an abort is never the round not existing yet
+        signal?.throwIfAborted()
+        // most likely the round doesn't exist yet: retry at the latest round if so
+        const last = await latest()
+        if (first <= last) throw e
+        if (from > last) return undefined
+        found = await scanAt(last)
+      }
+    } else {
+      const last = await latest()
+      if (from > last) return undefined
+      found = await scanAt(end < last ? end : last)
+    }
+
+    const [round, timestamp] = found
+    if (round === 0n) return undefined
+    this.clock.remember(round, Number(timestamp))
+    return { round, timestamp: Number(timestamp) }
+  }
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // History
+
+  /**
+   * The last round whose block timestamp is at or before `time` (a `Date`, or seconds since the epoch). Searches from
+   * the registry's creation round by default, and returns that round for an earlier `time` (`clamp: false` throws a
+   * `RangeError` instead).
+   */
+  async roundAt(time: Date | number, { minRound, clamp = true, onProbe, signal }: RoundAtOptions = {}): Promise<RoundTime> {
+    const min = minRound ?? (await raceAbort(this.getRegistryCreationRound(), signal)) ?? 1n
+    return this.clock.roundAt(time, { minRound: min, clamp, onProbe, signal })
+  }
+
+  /**
+   * The block timestamp of a round, in seconds since the epoch. Header reads are cached and shared, so `signal` stops
+   * the wait, not the read.
+   */
+  timestampOf(round: number | bigint, { signal }: SignalOptions = {}): Promise<number> {
+    return raceAbort(this.clock.timestampOf(round), signal)
+  }
+
+  /**
+   * The rounds at which a validator, pool, staker or the registry changed, newest first by default. Rounds only: read
+   * the state at a chosen round with `{ round }`. Bounded by `minRound`, or limited to the last 1,000 changes.
+   */
+  getChangeRounds(target: TimelineTarget, options?: TimelineOptions): Promise<TimelinePage> {
+    return getChangeRounds(this.algorand, this.registryAppId, target, options)
+  }
+
+  /**
+   * Each validator's totals at each round: one simulate on a dtalgorand node for up to its `max-rounds` rounds. Each
+   * point carries its round's block timestamp, also cached in `clock`. See `seriesAt` for rounds that fail.
+   */
+  async getValidatorTotalsSeries(
+    validatorIds: (number | bigint)[],
+    rounds: SeriesRounds,
+    { maxPoints = MAX_SERIES_POINTS, signal }: { maxPoints?: number } & SignalOptions = {},
+  ): Promise<SeriesPoint<ValidatorTotals[]>[]> {
+    const list = seriesRounds(rounds, maxPoints)
+    const ids = validatorIds.map(BigInt)
+    return this.seriesAt(
+      list,
+      (s) => s.getValidatorTotals({ methodArgsOrArgsArray: { registryAppId: this.registryAppId, validatorIds: ids } }),
+      signal,
+    )
+  }
+
+  /**
+   * Each pool's totals at each round: one simulate on a dtalgorand node for up to its `max-rounds` rounds. Each point
+   * carries its round's block timestamp, also cached in `clock`.
+   */
+  async getPoolTotalsSeries(
+    poolAppIds: (number | bigint)[],
+    rounds: SeriesRounds,
+    { maxPoints = MAX_SERIES_POINTS, signal }: { maxPoints?: number } & SignalOptions = {},
+  ): Promise<SeriesPoint<PoolTotals[]>[]> {
+    const list = seriesRounds(rounds, maxPoints)
+    const pools = poolAppIds.map(BigInt)
+    return this.seriesAt(list, (s) => s.getPoolTotals({ methodArgsOrArgsArray: { pools } }), signal)
+  }
+
+  /**
+   * The registry's totals at each round: one simulate on a dtalgorand node for up to its `max-rounds` rounds. Each
+   * point carries its round's block timestamp, also cached in `clock`.
+   */
+  async getRegistryTotalsSeries(
+    rounds: SeriesRounds,
+    { maxPoints = MAX_SERIES_POINTS, signal }: { maxPoints?: number } & SignalOptions = {},
+  ): Promise<SeriesPoint<RegistryTotals>[]> {
+    const list = seriesRounds(rounds, maxPoints)
+    const points = await this.seriesAt(
+      list,
+      (s) => s.getRegistryTotals({ methodArgsOrArgsArray: { registryAppId: this.registryAppId }, extraMethodCallArgs: MIN_FEE }),
+      signal,
+    )
+    return points.map((p): SeriesPoint<RegistryTotals> => {
+      if (!p.ok) return p
+      const [totals] = p.value
+      return {
+        ...p,
+        value: { numValidators: Number(totals.numValidators), numStakers: totals.numStakers, staked: totals.staked },
+      }
+    })
+  }
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Internals
+
+  /**
+   * Runs a ghost read at each round with the round's block timestamp in the same request, caching the timestamps. A
+   * round that can't be read is an `ok: false` point with its error (see `ReadOptions.round`); the others still read.
+   * On a node without time travel, rounds near the latest all get one read of the latest state, with the timestamp of
+   * the newest round the read can see (the latest, or a round or two before it).
+   *
+   * An abort rejects the whole series with the signal's reason; it never becomes failed points.
+   */
+  private async seriesAt<T>(rounds: bigint[], read: (s: RetiReaderSDK) => Promise<T>, signal?: AbortSignal): Promise<SeriesPoint<T>[]> {
+    type Outcome = { ok: true; value: unknown } | { ok: false; error: Error }
+    const plans = await this.planRounds(rounds, signal)
+    const past = plans.flatMap((p) => ("at" in p && p.at !== undefined ? [p.at] : []))
+    const needsLatest = plans.some((p) => "at" in p && p.at === undefined)
+    const withTimestamp = (s: RetiReaderSDK) => [read(s), s.getRoundTimestamp({ methodArgsOrArgsArray: {}, extraMethodCallArgs: MIN_FEE })] as const
+    const [pastResults, latest] = await Promise.all([
+      past.length > 0 ? this.ghost.atRounds(past, withTimestamp, simOptions({ signal })) : [],
+      needsLatest
+        ? this.ghost.batch(withTimestamp, simOptions({ signal })).then(
+            (value): Outcome => ({ ok: true, value }),
+            (error): Outcome => {
+              signal?.throwIfAborted()
+              return { ok: false, error }
+            },
+          )
+        : undefined,
+    ])
+    // a node without extended simulate reports an abort as failed rounds
+    signal?.throwIfAborted()
+    const byRound = new Map<bigint, Outcome>(pastResults.map((r) => [r.round, r]))
+    return plans.map((p): SeriesPoint<T> => {
+      if ("error" in p) return { round: p.round, ok: false, error: p.error }
+      const r = p.at === undefined ? latest! : byRound.get(p.at)!
+      if (!r.ok) return { round: p.round, ok: false, error: r.error }
+      const [value, [ts]] = r.value as [T, bigint[]]
+      const timestamp = Number(ts)
+      // a read of the latest state isn't at p.round, so its timestamp isn't p.round's
+      if (p.at !== undefined) this.clock.remember(p.at, timestamp)
+      return { round: p.round, ok: true, value, timestamp }
+    })
+  }
+
+  /** The round a read is at (the call's, else the SDK's; undefined for the latest state). Throws if it can't be read. */
+  private async roundFor(options: ReadOptions): Promise<bigint | undefined> {
+    options.signal?.throwIfAborted()
+    const round = options.round ?? this.round
+    if (round === undefined) return undefined
+    const [plan] = await this.planRounds([BigInt(round)], options.signal)
+    if ("error" in plan) throw plan.error
+    return plan.at
+  }
+
+  /**
+   * Where each read goes: `at` its round, `at: undefined` for the latest state (rounds near the latest on a node
+   * without time travel), or why it can't be read: `RetiNotDeployedError` before the registry existed (when the node
+   * can tell), `TimeTravelUnavailableError` for older rounds on a node without time travel, `FutureRoundError` past the
+   * node's latest round.
+   */
+  private async planRounds(rounds: bigint[], signal?: AbortSignal): Promise<RoundPlan[]> {
+    const highest = rounds.reduce((max, r) => (r > max ? r : max), -1n)
+    // any round up to one the node has reported exists; only read its status for a higher round
+    const known = this.shared.latest?.round ?? -1n
+    // shared reads: an abort stops the wait, not the reads
+    const [node, creation, reported] = await raceAbort(
+      Promise.all([this.getNode(), this.getRegistryCreationRound(), highest > known ? this.latestRound(highest, Infinity) : undefined]),
+      signal,
+    )
+    const timeTravel = node.kind === "dt" && node.limits.timeTravel
+    // without time travel, rounds are measured from the latest, so it has to be fresh
+    const last = timeTravel ? (reported ?? known) : await raceAbort(this.latestRound(0n, STATUS_MAX_AGE_MS), signal)
+    const reason = node.kind === "stock" ? node.reason : "time travel is off"
+    return rounds.map((round): RoundPlan => {
+      if (creation !== undefined && round < creation) return { round, error: new RetiNotDeployedError(round, creation) }
+      if (timeTravel) return round > last ? { round, error: new FutureRoundError(round, last) } : { round, at: round }
+      if (round > last + STOCK_ROUND_SLACK) return { round, error: new FutureRoundError(round, last) }
+      if (round < last - STOCK_ROUND_SLACK) return { round, error: new TimeTravelUnavailableError(round, last, reason) }
+      return { round, at: undefined }
+    })
+  }
+
+  /**
+   * The node's latest round, reusing the last read if it's at least `atLeast` and no older than `maxAge` ms. Concurrent
+   * callers share one status read.
+   */
+  private latestRound(atLeast: bigint, maxAge: number): Promise<bigint> {
+    const cached = this.shared.latest
+    if (cached && cached.round >= atLeast && Date.now() - cached.at <= maxAge) return Promise.resolve(cached.round)
+    if (!this.shared.statusRead) {
+      const read = this.algorand.client.algod
+        .status()
+        .do()
+        .then(({ lastRound }) => {
+          if (!this.shared.latest || lastRound >= this.shared.latest.round) this.shared.latest = { round: lastRound, at: Date.now() }
+          return lastRound
+        })
+      const clear = () => {
+        if (this.shared.statusRead === read) this.shared.statusRead = undefined
+      }
+      read.then(clear, clear)
+      this.shared.statusRead = read
+    }
+    return this.shared.statusRead
+  }
+
+  /** The reader for a read: the latest-state reader, or the ghost pinned at the read's round. */
+  private async reader(options: ReadOptions): Promise<RetiReaderSDK> {
+    const round = await this.roundFor(options)
+    return round === undefined ? this.baseSDK : this.ghost.atRound(round)
+  }
+
+  /** A generated reader method's call at the read's round, rejecting with the signal's reason once it aborts. */
+  private read<T>(options: ReadOptions, call: (reader: RetiReaderSDK) => Promise<T>): Promise<T> {
+    return abortable(options.signal, async () => call(await this.reader(options)))
   }
 }
+
+/** Where a read at `round` goes: `at` that round, `at: undefined` for the latest state, or why it can't be read. */
+type RoundPlan = { round: bigint; at: bigint | undefined } | { round: bigint; error: Error }

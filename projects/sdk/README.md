@@ -1,34 +1,48 @@
-# Reti Ghost SDK
+# Reti Ghost SDK (dtalgorand variant)
 
-[![npm version](https://img.shields.io/npm/v/reti-ghost-sdk.svg?color=cb3837)](https://www.npmjs.com/package/reti-ghost-sdk)
+Fast, read-only SDK for the Reti staking pool registry on Algorand, generated with Ghostkit and wrapped for ergonomic, high-throughput reads.
 
-Fast, read-only SDK for the Reti staking pool registry on Algorand, generated with Ghostkit and wrapped for ergonomic, high‑throughput reads.
+This variant (`0.3.0-dt.*`) reads the registry **as of any round since it was created** (round 46,518,891, Jan 2025) on a [dtalgorand](#node-requirements) node, so an app built on it can time travel: every page the Reti UI shows can be rendered as it was at round R. On top of that it has three history features: date → round lookup, a windowed change timeline, and chart series over many rounds.
 
-It simulates a "ghost" contract (or optionally calls a deployed reader app) to batch and decode on-chain data efficiently with a single simulate per request. This follows the Ghostkit pattern; see the upstream rationale and constraints in the [Ghostkit README](https://github.com/d13co/ghostkit).
+It simulates a "ghost" contract (or optionally calls a deployed reader app) to batch and decode on-chain data efficiently. This follows the Ghostkit pattern; see the [Ghostkit README](https://github.com/d13co/ghostkit).
 
-- Ghostkit: generates a typed SDK that reads structured data from contract log lines ([GitHub](https://github.com/d13co/ghostkit), [npm](https://www.npmjs.com/package/ghostkit))
-- Wrapper: `RetiGhostSDK` adds batching and helpers specific to the Reti registry
+Reads at the latest round still work against any algod.
 
 
 ## Install
 
-```fish
-# with pnpm
-pnpm add reti-ghost-sdk
+This is a prerelease line, published under the npm dist-tag `dt` (the stable SDK is `latest`, 0.2.x, from `main`):
 
-# or npm
-echo "{\"type\":\"module\"}" > package.json # if you need ESM
-npm i reti-ghost-sdk
-
-# or yarn
-yarn add reti-ghost-sdk
+```sh
+npm install reti-ghost-sdk@dt
 ```
 
-Peer dependencies for this package:
-- `@algorandfoundation/algokit-utils` >= 9.2.0
-- `algosdk` >= 3.5.2
+Reads at past rounds need the dtalgorand forks of algosdk and algokit-utils, which aren't on npm yet. Their tarballs are in this repo's [`vendor/`](https://github.com/d13co/reti-ghost-sdk/tree/dtalgorand/vendor) on the `dtalgorand` branch. Override both everywhere in your app, so that exactly one copy of each loads (your code, this SDK and any wallet library must share them):
 
-Node.js 22+ is required for development (upstream puya-ts requirement).
+```yaml
+# pnpm: pnpm-workspace.yaml, or "pnpm": { "overrides": { ... } } in package.json
+overrides:
+  algosdk: https://raw.githubusercontent.com/d13co/reti-ghost-sdk/v0.3.0-dt.5/vendor/algosdk-3.8.0-dt.2.tgz
+  '@algorandfoundation/algokit-utils': https://raw.githubusercontent.com/d13co/reti-ghost-sdk/v0.3.0-dt.5/vendor/algorandfoundation-algokit-utils-9.2.3-dt.2.tgz
+```
+
+With npm, put the same two entries under `"overrides"` in `package.json`. You can also copy the tarballs into your repo and point at them with `file:`.
+
+The SDK detects the forks at runtime. With stock algosdk and algokit-utils it still reads the latest state, and reads at older rounds throw `TimeTravelUnavailableError` (see [Reading at a Past Round](#reading-at-a-past-round)). The peer ranges are loose (`>=`) for that reason; package managers may warn that the fork prereleases don't satisfy them, which is harmless.
+
+The algokit-utils fork declares Node.js 22+.
+
+See [the repo README](https://github.com/d13co/reti-ghost-sdk/tree/dtalgorand#readme) for what each fork changes and where its source is.
+
+### Node requirements
+
+| Feature | Needs |
+|---|---|
+| Reads at the latest round | any algod |
+| Reads at a past round, date lookup, series | a dtalgorand node with time travel (`GET /v2/transactions/simulate/limits` reports `time-travel: true`) |
+| Change timeline | a dtalgorand node (`/versions` endpoints) |
+
+`sdk.getNode()` reports what was detected and the node's simulate limits; `sdk.supportsTimeTravel()` answers the main question, and `sdk.getMaxRounds()` how many rounds one simulate request covers.
 
 
 ## Quick Start
@@ -37,157 +51,165 @@ Node.js 22+ is required for development (upstream puya-ts requirement).
 import { AlgorandClient } from "@algorandfoundation/algokit-utils"
 import { RetiGhostSDK } from "reti-ghost-sdk"
 
-const sdk = new RetiGhostSDK({
-  algorand: AlgorandClient.mainNet(),
-  registryAppId: 2714516089n, // Mainnet
-  // Optional: use a deployed reader contract instead of ghost simulation
-  // ghostAppId: 123456789013n,
-})
+// a dtalgorand node; see "Node requirements"
+const algorand = AlgorandClient.fromConfig({ algodConfig: { server: "https://dtalgod.example.com", port: 443, token: "" } })
+const sdk = new RetiGhostSDK({ algorand, registryAppId: 2714516089n })
 
-const numValidators = await sdk.getNumValidators()
-// Validator IDs are numeric and start from 1
-const validatorIds = Array.from({ length: numValidators }, (_, i) => i + 1)
+// latest
+const { numValidators } = await sdk.getRegistryTotals()
+const validators = await sdk.getValidators(Array.from({ length: numValidators }, (_, i) => i + 1))
 
-// Aggregated read: config, state, poolInfo[], nodeAssignment per validator
-const validators = await sdk.getValidators(validatorIds)
-// Order of inputs is preserved in outputs
-// Example access (id == validatorIds[0]): validators[0].config, validators[0].state, validators[0].poolInfo, validators[0].nodeAssignment
+// as of a date
+const { round } = await sdk.roundAt(new Date("2025-06-01T00:00:00Z"))
+const then = sdk.atRound(round) // every read of `then` is as of `round`
+const { numValidators: n } = await then.getRegistryTotals()
+const validatorsThen = await then.getValidators(Array.from({ length: n }, (_, i) => i + 1))
 
-// Fetch all pools' algod versions
-const poolAppIds = pools.flatMap((p) => p.map((pool) => pool.poolAppId))
-const algodVersions = await sdk.getPoolAlgodVersions(poolAppIds)
+// or per call
+const [state] = await sdk.getValidatorStates([1], { round: 55_000_000n })
 ```
 
 
-## What You Get
+## Reading at a Past Round
 
-- `RetiGhostSDK`: high-level wrapper around the generated `RetiReaderSDK`
-- Automatic input chunking to respect AVM reference and app-arg limits
-- Clean, typed results that mirror the ARC‑56 structs of the Reti reader contract
+Every read takes a trailing `{ round }`, or pin a round for all reads with `sdk.atRound(round)` (or the constructor's `round`). A read is the state as of the end of that round. All the simulates a read is split into run at the same round, so a large read is one consistent snapshot.
+
+- Reads at past rounds always use the ghost, never a deployed reader (`ghostAppId`), which may not have existed or may have had other code then.
+- A round before the registry existed throws `RetiNotDeployedError`, and a round past the node's latest throws `FutureRoundError`, both without a request. (A simulate at a future round would otherwise get an HTTP 500, which algokit-utils retries for ~14 s.)
+- On a node without time travel, which can only read the latest state, a round within 20 of the latest (about a minute) reads the latest state, so a round taken from `status()` keeps working. An older round throws `TimeTravelUnavailableError`.
+- The SDK reads the node's status only for a round past the latest it has seen, or, without time travel, at most once a second.
+- Validators, pools and assets that don't exist yet at the round read as zeros (`exists: false` for pools, `deleted: true` for assets) instead of failing.
+
+### Aborting reads
+
+Every read also takes a `signal` (an `AbortSignal`): `{ round, signal }` for reads, the options object for `roundAt`, `timestampOf`, `firstRoundAtOrAfter`, `getTimestampsAtRounds`, `getChangeRounds` and the series methods. On abort the read rejects with the signal's reason (a `DOMException` named `AbortError` by default), on either backend, and a series rejects as a whole rather than returning failed points.
+
+- With the dtalgorand fork of algokit-utils 9.2.3-dt.2 or later, the read's HTTP requests are cancelled and not retried. With an older one the read still rejects on abort, but its requests run to the end.
+- Reads other calls share (node detection, the registry's creation round, the node's status, cached block headers) aren't cancelled: the aborted read stops waiting for them, and they carry on for the others.
+- On a stock node, `composer.simulate` can't pass the signal to fetch, so its simulate runs to the end.
+- Past-round reads cost about the same as latest ones. Measured on MainNet against a dtalgorand node: `getValidators` for all 227 validators ~270 ms, `getPoolStates` for 286 pools ~70 ms, every other read 20–60 ms.
 
 
 ## API Overview
 
-All methods are read-only and return decoded, typed data. Many accept arrays and are automatically chunked for you.
+All methods are read-only, take an optional trailing `{ round }`, and return results in input order. Array inputs are chunked automatically to the node's limits.
 
-- `constructor({ algorand, registryAppId, ghostAppId?, concurrency? })`
-  - `algorand`: Algokit `AlgorandClient` (e.g., `AlgorandClient.mainNet()`)
-  - `registryAppId`: Reti registry application id
-  - `ghostAppId?`: optional app id of a deployed reader; if omitted, uses a ghost (simulated) contract
-  - `concurrency?`: per-call chunk concurrency for batched reads (default `4`).
+### Registry
 
-- `getValidators(validatorIds): Promise<Validator[]>`
-  - Convenience call returning config, state, poolInfo, and nodeAssignment together.
-  - Aggregates multiple reader calls behind the scenes; results are still per validator id in a single batched simulate.
-  - Chunks 64 validators per simulate call
-  - Returns `Validator[]`, an aggregated reader-only struct that is not defined in the core Reti registry contract (it’s composed for convenience by the reader/SDK).
+- `getRegistryTotals()`: `{ numValidators, numStakers, staked }` from the registry's global state.
+- `getNumValidators()`: `numValidators` from the above.
+- `getMbrAmountsAndProtocolConstraints()`: MBR amounts and protocol constraints.
+- `getRegistryCreationRound()`: the earliest readable round (cached; undefined on a node without `/versions`).
 
-- `getNumValidators(): Promise<number>`
-  - Reads `numV` from the registry global state.
+### Validators
 
-- `getValidatorConfig(validatorIds): Promise<ValidatorConfig[]>`
-  - Batch fetches validator configs.
+- `getValidators(validatorIds)`: config, state, `poolInfo` (`[poolAppId, totalStakers, totalAlgoStaked]` tuples) and node assignments per validator.
+- `getValidatorConfig(validatorIds)`, `getValidatorStates(validatorIds)`, `getNodePoolAssignments(validatorIds)`.
+- `getPools(validatorIds)`: for each validator, its `PoolInfo` objects.
+- `getValidatorTotals(validatorIds)`: `{ validatorId, numPools, totalStakers, totalAlgoStaked }`, a small read made for charts.
 
-- `getValidatorStates(validatorIds): Promise<ValidatorCurState[]>`
-  - Batch fetches current state (pools, totals, held back, ...).
+### Pools
 
-- `getPools(validatorIds): Promise<PoolInfo[][]>`
-  - For each validator id, returns an array of its `PoolInfo` entries.
+- `getPoolStates(poolAppIds)`: global state and account balance per pool: `exists`, `validatorId`, `poolId`, `numStakers`, `staked`, `minEntryStake`, `lastPayout`, `epochNumber`, `algodVer`, `roundsPerDay`, `binRoundStart`, `rewardAccumulator`, `stakeAccumulator`, `ewma` (the APY moving average the UI reads), `balance`, `minBalance`.
+- `getPoolTotals(poolAppIds)`: `{ poolAppId, numStakers, staked }`, made for charts.
+- `getPoolBalancesAndLastPayouts(poolAppIds)`, `getPoolAlgodVersions(poolAppIds)`.
+- `getPoolStakers(poolAppId)`: the pool's `stakers` box (one REST read), empty slots left out.
 
-- `getNodePoolAssignments(validatorIds): Promise<NodePoolAssignmentConfig[]>`
-  - Node assignment structure for each validator.
+### Stakers and accounts
 
-- `getPoolAlgodVersions(poolAppIds): Promise<string[]>`
-  - Reads the algod version string from many pool app ids. Uses app references for speed.
+- `getStakerPositions(stakers)`: every pool each staker is in, with their `StakedInfo` (balance, total rewarded, reward token balance, entry round).
+- `getAccountBalances(accounts)`: `{ account, balance, minBalance }`.
+- `getAssetHoldings([{ account, assetId }])`: `{ account, assetId, optedIn, balance }`.
 
-- `getBlockTimestamps(num): Promise<bigint[]>`
-  - Small utility that fetches the last `num` block timestamps via ghost reader.
+### Assets and blocks
 
-- `getAssets(assetIds): Promise<AssetInfo[]>`
-  - Reads asset metadata and returns a simplified union type:
-    - `{ index: bigint, deleted: true }` for deleted assets
-    - `{ index: bigint, params: { creator, total, decimals, unitName, name } }` otherwise
-
-Types like `ValidatorConfig`, `ValidatorCurState`, `PoolInfo`, `NodePoolAssignmentConfig`, and `Validator` are exported from the generated reader SDK and used directly here.
+- `getAssets(assetIds)`: `{ index, deleted: true }` or `{ index, params: { creator, total, decimals, unitName, name } }`.
+- `getBlockTimestamps(num)`: timestamps of the `num` blocks before the round (up to 1,000), oldest first.
+- `getTimestampsAtRounds(rounds)` and `firstRoundAtOrAfter(start, target)`: see [Date → round](#date--round).
 
 
-## Example Recipes
+## History
 
-- Fetch all validator related data at once
-```ts
-// Aggregated read: config, state, poolInfo[], nodeAssignment per validator
-const validators = await sdk.getValidators(validatorIds)
-// Order of inputs is preserved in outputs
-// Example access (first validator): validators[0].config, validators[0].state, validators[0].poolInfo, validators[0].nodeAssignment
-```
+### Date → round
 
-- Fetch all validator configs at once
-```ts
-const numValidators = await sdk.getNumValidators()
-const ids = [...Array(numValidators)].map((_, i) => i + 1)
+`sdk.roundAt(date)` returns the last round whose block timestamp is at or before `date`; `sdk.timestampOf(round)` goes the other way. The lookup reads block headers (any round, ~50 ms each): a few secant steps, then one parallel read of the rounds around the estimate. Measured: 7–11 header reads, 0.25–0.4 s. Headers are cached in `sdk.clock`.
 
-const configs = await sdk.getValidatorConfig(ids)
-```
+`roundAt` searches from the registry's creation round, and returns that round for an earlier date. Pass `{ minRound }` to search further back, `{ clamp: false }` to get a `RangeError` for a date before `minRound`, and `{ onProbe }` to see each header read.
 
-- Read asset metadata
-```ts
-const assets = await sdk.getAssets([1234n, 31566704n])
-// -> union: deleted or full params
-```
+Two reads let an app do the search itself with fewer requests, e.g. against its own cache of round ↔ time pairs:
+
+- `getTimestampsAtRounds(rounds)`: the block timestamps of any rounds, from one simulate per `getMaxRounds()` rounds (256 on the dtalgorand MainNet nodes), each `{ round, ok, value }` like a series point.
+- `firstRoundAtOrAfter(start, target, { knownRound? })`: the first round from `start` whose timestamp is at or after `target`, from one simulate that scans up to 1,000 rounds. Undefined if none of them reaches it. Pass a `knownRound` the node has (e.g. the latest you've seen) to stop the scan there; without it, a scan that would end past the node's tip costs a status read and a second simulate.
+
+Both add what they read to `sdk.clock`. Measured from Node.js against a dtalgorand MainNet node, rounds spread over the registry's life: 16 timestamps in 57–107 ms (16 header reads 8 at a time: 54–207 ms), a full 1,000-round scan in 70–195 ms.
+
+### Change timeline
+
+`sdk.getChangeRounds(target, options)` lists the rounds at which something changed, newest first by default:
+
+| `target` | What changes |
+|---|---|
+| `{ validator: id }` | the validator's record: config, state, pools, node assignments |
+| `{ registry: true }` | validator count, total stakers and stake |
+| `{ pool: appId }` | the pool's global state: payouts, stake, APY |
+| `{ poolStakers: appId }` | the pool's stakers box |
+| `{ staker: address }` | the set of pools the staker is in |
+
+It returns rounds and timestamps only. Read the state at a chosen round with `{ round }`. The full history is large (the registry ~80k changes since Jan 2025, one validator ~10k), so a call needs `minRound`, or uses `order: 'desc'` with `limit` ≤ 1,000. Measured: the last 20 changes of a validator in one request (~80 ms), a 2-week window (~180 changes) in ~40 ms. Page with `next`.
+
+### Series
+
+For charts, one simulate runs a small read at many rounds, up to the node's `max-rounds` (`getMaxRounds()`, 256 on the dtalgorand MainNet nodes) per request:
+
+- `getValidatorTotalsSeries(validatorIds, rounds)`
+- `getPoolTotalsSeries(poolAppIds, rounds)`
+- `getRegistryTotalsSeries(rounds)`
+
+`rounds` is a list, or `{ from, to, points }` spread evenly; points come back deduplicated and in round order. Each point is `{ round, ok: true, value, timestamp }` or `{ round, ok: false, error }`, where `timestamp` is the round's block timestamp in seconds, read in the same request and cached in `sdk.clock`. A round that can't be read is an `ok: false` point with the error a single read would throw (`RetiNotDeployedError`, `FutureRoundError`, `TimeTravelUnavailableError`); the other rounds still read. Without time travel, the rounds near the latest share one read of the latest state. At most 256 points by default (`maxPoints` to change).
+
+Measured on MainNet, all from registry creation to now:
+
+| Series | Time | Response |
+|---|---|---|
+| 227 validators × 64 rounds | 0.7 s | 3 MB |
+| 227 validators × 256 rounds | 2.6 s | 12 MB |
+| 286 pools × 256 rounds | 1.4 s | 5.4 MB |
+| registry totals × 105 rounds | 0.3 s | small |
+
+Most of the validator series' response is the simulate's record of its inner calls, so in a browser keep validator series to about 64–128 points, or chart the registry totals.
 
 
 ## Ghost vs Deployed Reader
 
-By default, calls are simulated against a ghost (non-deployed) reader contract. For some workloads, using a deployed reader app can reduce payload size and run time.
+By default, calls are simulated against a ghost (non-deployed) reader contract. For latest-state reads you can call a deployed reader instead by passing `ghostAppId`. Reads at a past round always use the ghost.
 
-- Use deployed reader: pass `ghostAppId` in the constructor:
-```ts
-const sdk = new RetiGhostSDK({ algorand, registryAppId, ghostAppId: 123456789013n })
-```
-
-Ghost Mainnet App ID: 3374692547 **currently updatable by author.**
-
-## Limits and Performance Notes
-
-- AVM limits considered:
-  - 128 references per simulate call (apps/assets/accounts/boxes)
-  - ~2KB for app args; large inputs must be chunked
-- This SDK automatically chunks large `validatorIds` / `poolAppIds` arrays:
-  - Most methods: `@chunked(127)`
-  - `getPoolAlgodVersions`: `@chunked(255)` with app references
-- Concurrency:
-  - Per-call: each method invocation processes chunks with a configurable concurrency (default `4`).
-  - Not global: separate calls run their own chunk pipelines; concurrent SDK calls do not share a global limiter.
-  - Order: results preserve input order across chunks.
-  - Configure via constructor `new RetiGhostSDK({ concurrency: 8, ... })` or set `sdk.concurrency = 1` to throttle.
-- Reader account:
-  - The underlying generated SDK simulates using a funded reader account. The wrapper provides a default.
-
-For deeper background on the approach and trade-offs, see the [Ghostkit README](https://github.com/d13co/ghostkit) and the Ghost contracts motivation.
+Ghost Mainnet App ID: 3374692547 **currently updatable by author.** It runs the 0.2.0 reader, which lacks the methods added in 0.3.0, so deploy the new reader before pointing `ghostAppId` at it.
 
 
-## Types
+## Options
 
-- `ValidatorConfig`, `ValidatorCurState`, `PoolInfo`, `NodePoolAssignmentConfig`, `Validator`, `ValidatorPoolInfo` from the generated reader
-- Extra type exported by this package:
-  - `AssetInfo` (simplified union shape described above)
+`new RetiGhostSDK({ algorand, registryAppId, round?, ghostAppId?, readerAccount?, backend?, ghostFee?, cacheParamsTimeout?, debug? })`
+
+- `readerAccount`: the account reads are simulated from. Defaults to the network's fee sink, which is funded at every round.
+- `backend`: `auto` (default) uses a dtalgorand node's extended simulate when the forks and the node support it, else one simulate per group; `dt`, `stock`, or your own ghostkit backend.
+- `ghostFee`: what each simulated group may spend on fees (never charged). Default 10 Algo, enough for 10,000 inner calls.
+- `cacheParamsTimeout`: ms that latest-state reads reuse suggested params for (default 3,000).
+
+
+## Limits and Known Issues
+
+- Chunking follows the node's simulate limits (`max-txn-groups`, `resource-limit-multiplier`) and the AVM's 256 inner transactions per group: `getValidators` takes 64 validators per group, the other validator reads 256; a dtalgorand node sends up to 16 groups per request.
+- An asset or pool app that existed and was later destroyed or deleted can't be read at rounds after that; the simulate fails as "unavailable". Ids not created yet at a round are handled.
 
 
 ## Development
 
-This package ships prebuilt types and JS from `dist/`, in both ESM (`dist/esm/`) and
-CommonJS (`dist/cjs/`) form, so it works with `import` and `require` alike. Consumers get
-the right one automatically via the `exports` map. The generated reader client lives in
-`src/generated/` and is copied from the contracts project during build.
-
-- Build
-```fish
-pnpm -w --filter reti-ghost-sdk build
-```
-
-`build` compiles both formats. To run just one: `build:esm` or `build:cjs`.
-
-- Examples: see `projects/sdk/src/examples/` in this repo for scripts demonstrating usage on MainNet and TestNet.
+- Build: `algokit project run build` at the repo root, or `pnpm --filter smart_contracts build && pnpm --filter reti-ghost-sdk build`. The SDK build copies the generated reader client from the contracts project into `src/generated/`.
+- Examples (`examples/`, run with `npx tsx`; point `DT_ALGOD_SERVER` at a dtalgorand MainNet node, and set `DT_ALGOD_TOKEN` if it needs one):
+  - `at-round.ts [round|latest]`: everything the UI reads, at a round
+  - `date-to-round.ts [date]`, `timeline.ts [validatorId]`, `series.ts [points]`
+  - `abort.ts`: aborting reads (series, pinned reads, `roundAt` between probes, shared header reads, the stock backend)
+  - `verify.ts [points]`: cross-checks the SDK's reads with REST reads at the same rounds (validator boxes byte for byte, pool global state and balances, staker positions and balances) over the registry's life. Last run: 255 rounds, all match.
 
 
 ## License

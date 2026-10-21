@@ -8,7 +8,7 @@ const deployer = algosdk.mnemonicToSecretKey(
 
 const algorand = AlgorandClient.testNet()
 
-const factory = algorand.client.getTypedAppFactory(RetiGhostSDK.ghost.factory, {
+const factory = algorand.client.getTypedAppFactory(RetiGhostSDK.baseSDK.factory, {
   defaultSender: deployer.addr,
   defaultSigner: algosdk.makeBasicAccountTransactionSigner(deployer),
 })

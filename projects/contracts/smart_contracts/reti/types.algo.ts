@@ -77,3 +77,17 @@ export type AssetInfo = {
   unitName: string;
   name: string;
 };
+
+export type ValidatorPoolKey = {
+  id: uint64; // validator id
+  poolId: uint64; // 1-based pool index within the validator
+  poolAppId: uint64;
+};
+
+export type StakedInfo = {
+  account: Address;
+  balance: uint64;
+  totalRewarded: uint64;
+  rewardTokenBalance: uint64;
+  entryRound: uint64; // round of entry, plus 320 for the consensus balance delay
+};

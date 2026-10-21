@@ -4,3 +4,7 @@ linkWorkspacePackages: true
 onlyBuiltDependencies:
   - '@algorandfoundation/puya-ts'
   - esbuild
+# dtalgorand forks, vendored until published: one copy of each everywhere
+overrides:
+  algosdk: file:vendor/algosdk-3.8.0-dt.2.tgz
+  '@algorandfoundation/algokit-utils': file:vendor/algorandfoundation-algokit-utils-9.2.3-dt.2.tgz

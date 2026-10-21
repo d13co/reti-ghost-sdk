@@ -1,0 +1,137 @@
+{
+    "name": "StakingPool",
+    "structs": {
+        "StakedInfo": [
+            {
+                "name": "account",
+                "type": "address"
+            },
+            {
+                "name": "balance",
+                "type": "uint64"
+            },
+            {
+                "name": "totalRewarded",
+                "type": "uint64"
+            },
+            {
+                "name": "rewardTokenBalance",
+                "type": "uint64"
+            },
+            {
+                "name": "entryRound",
+                "type": "uint64"
+            }
+        ]
+    },
+    "methods": [
+        {
+            "name": "getStakerInfo",
+            "args": [
+                {
+                    "type": "address",
+                    "name": "staker"
+                }
+            ],
+            "returns": {
+                "type": "(address,uint64,uint64,uint64,uint64)",
+                "struct": "StakedInfo"
+            },
+            "actions": {
+                "create": [],
+                "call": [
+                    "NoOp"
+                ]
+            },
+            "readonly": true,
+            "events": [],
+            "recommendations": {}
+        }
+    ],
+    "arcs": [
+        22,
+        28
+    ],
+    "networks": {},
+    "state": {
+        "schema": {
+            "global": {
+                "ints": 0,
+                "bytes": 0
+            },
+            "local": {
+                "ints": 0,
+                "bytes": 0
+            }
+        },
+        "keys": {
+            "global": {},
+            "local": {},
+            "box": {}
+        },
+        "maps": {
+            "global": {},
+            "local": {},
+            "box": {}
+        }
+    },
+    "bareActions": {
+        "create": [
+            "NoOp"
+        ],
+        "call": []
+    },
+    "sourceInfo": {
+        "approval": {
+            "sourceInfo": [
+                {
+                    "pc": [
+                        37
+                    ],
+                    "errorMessage": "OnCompletion must be NoOp && can only call when creating"
+                },
+                {
+                    "pc": [
+                        26
+                    ],
+                    "errorMessage": "OnCompletion must be NoOp && can only call when not creating"
+                },
+                {
+                    "pc": [
+                        48
+                    ],
+                    "errorMessage": "invalid number of bytes for arc4.static_array<arc4.uint8, 32>"
+                },
+                {
+                    "pc": [
+                        49
+                    ],
+                    "errorMessage": "stub"
+                }
+            ],
+            "pcOffsetMethod": "none"
+        },
+        "clear": {
+            "sourceInfo": [],
+            "pcOffsetMethod": "none"
+        }
+    },
+    "source": {
+        "approval": "I3ByYWdtYSB2ZXJzaW9uIDExCiNwcmFnbWEgdHlwZXRyYWNrIGZhbHNlCgovLyBAYWxnb3JhbmRmb3VuZGF0aW9uL2FsZ29yYW5kLXR5cGVzY3JpcHQvYXJjNC9pbmRleC5kLnRzOjpDb250cmFjdC5hcHByb3ZhbFByb2dyYW0oKSAtPiB1aW50NjQ6Cm1haW46CiAgICAvLyBzbWFydF9jb250cmFjdHMvcmV0aS9zdGFraW5nUG9vbC5hbGdvLnRzOjkKICAgIC8vIGV4cG9ydCBjbGFzcyBTdGFraW5nUG9vbCBleHRlbmRzIENvbnRyYWN0IHsKICAgIHR4biBOdW1BcHBBcmdzCiAgICBieiBtYWluX19fYWxnb3RzX18uZGVmYXVsdENyZWF0ZUA1CiAgICBwdXNoYnl0ZXMgMHg1Y2ZiYjA1NyAvLyBtZXRob2QgImdldFN0YWtlckluZm8oYWRkcmVzcykoYWRkcmVzcyx1aW50NjQsdWludDY0LHVpbnQ2NCx1aW50NjQpIgogICAgdHhuYSBBcHBsaWNhdGlvbkFyZ3MgMAogICAgbWF0Y2ggbWFpbl9nZXRTdGFrZXJJbmZvX3JvdXRlQDMKICAgIGVycgoKbWFpbl9nZXRTdGFrZXJJbmZvX3JvdXRlQDM6CiAgICAvLyBzbWFydF9jb250cmFjdHMvcmV0aS9zdGFraW5nUG9vbC5hbGdvLnRzOjEwCiAgICAvLyBAYWJpbWV0aG9kKHsgcmVhZG9ubHk6IHRydWUgfSkKICAgIHR4biBPbkNvbXBsZXRpb24KICAgICEKICAgIHR4biBBcHBsaWNhdGlvbklECiAgICAmJgogICAgYXNzZXJ0IC8vIE9uQ29tcGxldGlvbiBtdXN0IGJlIE5vT3AgJiYgY2FuIG9ubHkgY2FsbCB3aGVuIG5vdCBjcmVhdGluZwogICAgYiBnZXRTdGFrZXJJbmZvCgptYWluX19fYWxnb3RzX18uZGVmYXVsdENyZWF0ZUA1OgogICAgLy8gc21hcnRfY29udHJhY3RzL3JldGkvc3Rha2luZ1Bvb2wuYWxnby50czo5CiAgICAvLyBleHBvcnQgY2xhc3MgU3Rha2luZ1Bvb2wgZXh0ZW5kcyBDb250cmFjdCB7CiAgICB0eG4gT25Db21wbGV0aW9uCiAgICAhCiAgICB0eG4gQXBwbGljYXRpb25JRAogICAgIQogICAgJiYKICAgIGFzc2VydCAvLyBPbkNvbXBsZXRpb24gbXVzdCBiZSBOb09wICYmIGNhbiBvbmx5IGNhbGwgd2hlbiBjcmVhdGluZwogICAgcHVzaGludCAxIC8vIDEKICAgIHJldHVybgoKCi8vIHNtYXJ0X2NvbnRyYWN0cy9yZXRpL3N0YWtpbmdQb29sLmFsZ28udHM6OlN0YWtpbmdQb29sLmdldFN0YWtlckluZm9bcm91dGluZ10oKSAtPiB2b2lkOgpnZXRTdGFrZXJJbmZvOgogICAgLy8gc21hcnRfY29udHJhY3RzL3JldGkvc3Rha2luZ1Bvb2wuYWxnby50czoxMAogICAgLy8gQGFiaW1ldGhvZCh7IHJlYWRvbmx5OiB0cnVlIH0pCiAgICB0eG5hIEFwcGxpY2F0aW9uQXJncyAxCiAgICBsZW4KICAgIHB1c2hpbnQgMzIgLy8gMzIKICAgID09CiAgICBhc3NlcnQgLy8gaW52YWxpZCBudW1iZXIgb2YgYnl0ZXMgZm9yIGFyYzQuc3RhdGljX2FycmF5PGFyYzQudWludDgsIDMyPgogICAgLy8gc21hcnRfY29udHJhY3RzL3JldGkvc3Rha2luZ1Bvb2wuYWxnby50czoxMgogICAgLy8gZXJyKCJzdHViIik7CiAgICBlcnIgLy8gc3R1Ygo=",
+        "clear": "I3ByYWdtYSB2ZXJzaW9uIDExCiNwcmFnbWEgdHlwZXRyYWNrIGZhbHNlCgovLyBAYWxnb3JhbmRmb3VuZGF0aW9uL2FsZ29yYW5kLXR5cGVzY3JpcHQvYmFzZS1jb250cmFjdC5kLnRzOjpCYXNlQ29udHJhY3QuY2xlYXJTdGF0ZVByb2dyYW0oKSAtPiB1aW50NjQ6Cm1haW46CiAgICBwdXNoaW50IDEgLy8gMQogICAgcmV0dXJuCg=="
+    },
+    "byteCode": {
+        "approval": "CzEbQQAYgARc+7BXNhoAjgEAAQAxGRQxGBBEQgALMRkUMRgUEESBAUM2GgEVgSASRAA=",
+        "clear": "C4EBQw=="
+    },
+    "compilerInfo": {
+        "compiler": "puya",
+        "compilerVersion": {
+            "major": 5,
+            "minor": 3,
+            "patch": 2
+        }
+    },
+    "events": [],
+    "templateVariables": {}
+}

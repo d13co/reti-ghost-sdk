@@ -3,7 +3,7 @@
   "sources": [
     "../../reti/contract.algo.ts"
   ],
-  "mappings": ";;;;AAQA;;AAAA;;;AAAA;;AAAA;AAAA;AAAA;;AAAA;AAAA;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;AAAA;;;AAAA;;;;;;;;;;;;;;AAAA;AA4BI;AALA;AAvBJ;;AAAA;AAAA;;AAAA;AAAA;AAAA;AAAA;;AAAA;AACG;;;AAAA;AAAA;AAAA;AAAA;AAEC;AAGD;;;AAAA;AAAA;AAAA;AAAA;AAEC;AAGD;;;AAAA;AAAA;AAAA;AAAA;AAEC;AAGD;;;AAAA;AAAA;AAAA;AAAA;AAEC",
+  "mappings": ";;;;AAQA;;AAAA;;;AAAA;;AAAA;AAAA;AAAA;;AAAA;AAAA;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;AAAA;;;AAAA;;;;;;;;;;;;;;;;AAAA;AA4BI;AALA;AAvBJ;;AAAA;AAAA;;AAAA;AAAA;AAAA;AAAA;;AAAA;AACG;;;AAAA;AAAA;AAAA;AAAA;AAEC;AAGD;;;AAAA;AAAA;AAAA;AAAA;AAEC;AAGD;;;AAAA;AAAA;AAAA;AAAA;AAEC;AAGD;;;AAAA;AAAA;AAAA;AAAA;AAEC;AAaD;;;AAAA;AAAA;;AAAA;AAAA;AAEC",
   "op_pc_offset": 0,
   "pc_events": {
     "1": {
@@ -23,7 +23,7 @@
       ]
     },
     "6": {
-      "op": "bz main___algots__.defaultCreate@13",
+      "op": "bz main___algots__.defaultCreate@14",
       "stack_out": []
     },
     "9": {
@@ -63,12 +63,13 @@
       "stack_out": []
     },
     "16": {
-      "op": "pushbytess 0x75aff61d 0x1f2f0109 0x910e94ac 0x7bbb6c8d 0x8a87142d 0xd1366cc3 // method \"getValidatorConfig(uint64)(uint64,address,address,uint64,uint8,address,uint64[4],uint64,uint64,uint64,uint32,uint32,address,uint64,uint64,uint8,uint64,uint64)\", method \"getValidatorState(uint64)(uint16,uint64,uint64,uint64)\", method \"getPools(uint64)(uint64,uint16,uint64)[]\", method \"getNodePoolAssignments(uint64)((uint64[3])[8])\", method \"getMbrAmounts()(uint64,uint64,uint64,uint64)\", method \"getProtocolConstraints()(uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64)\"",
+      "op": "pushbytess 0x75aff61d 0x1f2f0109 0x910e94ac 0x7bbb6c8d 0x8a87142d 0xd1366cc3 0xf846dd7a // method \"getValidatorConfig(uint64)(uint64,address,address,uint64,uint8,address,uint64[4],uint64,uint64,uint64,uint32,uint32,address,uint64,uint64,uint8,uint64,uint64)\", method \"getValidatorState(uint64)(uint16,uint64,uint64,uint64)\", method \"getPools(uint64)(uint64,uint16,uint64)[]\", method \"getNodePoolAssignments(uint64)((uint64[3])[8])\", method \"getMbrAmounts()(uint64,uint64,uint64,uint64)\", method \"getProtocolConstraints()(uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64)\", method \"getStakedPoolsForAccount(address)(uint64,uint64,uint64)[]\"",
       "defined_out": [
         "Method(getMbrAmounts()(uint64,uint64,uint64,uint64))",
         "Method(getNodePoolAssignments(uint64)((uint64[3])[8]))",
         "Method(getPools(uint64)(uint64,uint16,uint64)[])",
         "Method(getProtocolConstraints()(uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64))",
+        "Method(getStakedPoolsForAccount(address)(uint64,uint64,uint64)[])",
         "Method(getValidatorConfig(uint64)(uint64,address,address,uint64,uint8,address,uint64[4],uint64,uint64,uint64,uint32,uint32,address,uint64,uint64,uint8,uint64,uint64))",
         "Method(getValidatorState(uint64)(uint16,uint64,uint64,uint64))"
       ],
@@ -78,16 +79,18 @@
         "Method(getPools(uint64)(uint64,uint16,uint64)[])",
         "Method(getNodePoolAssignments(uint64)((uint64[3])[8]))",
         "Method(getMbrAmounts()(uint64,uint64,uint64,uint64))",
-        "Method(getProtocolConstraints()(uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64))"
+        "Method(getProtocolConstraints()(uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64))",
+        "Method(getStakedPoolsForAccount(address)(uint64,uint64,uint64)[])"
       ]
     },
-    "48": {
+    "53": {
       "op": "txna ApplicationArgs 0",
       "defined_out": [
         "Method(getMbrAmounts()(uint64,uint64,uint64,uint64))",
         "Method(getNodePoolAssignments(uint64)((uint64[3])[8]))",
         "Method(getPools(uint64)(uint64,uint16,uint64)[])",
         "Method(getProtocolConstraints()(uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64))",
+        "Method(getStakedPoolsForAccount(address)(uint64,uint64,uint64)[])",
         "Method(getValidatorConfig(uint64)(uint64,address,address,uint64,uint8,address,uint64[4],uint64,uint64,uint64,uint32,uint32,address,uint64,uint64,uint8,uint64,uint64))",
         "Method(getValidatorState(uint64)(uint16,uint64,uint64,uint64))",
         "tmp%6#0"
@@ -99,30 +102,31 @@
         "Method(getNodePoolAssignments(uint64)((uint64[3])[8]))",
         "Method(getMbrAmounts()(uint64,uint64,uint64,uint64))",
         "Method(getProtocolConstraints()(uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64))",
+        "Method(getStakedPoolsForAccount(address)(uint64,uint64,uint64)[])",
         "tmp%6#0"
       ]
     },
-    "51": {
-      "op": "match getValidatorConfig getValidatorState getPools getNodePoolAssignments main_getMbrAmounts_route@8 main_getProtocolConstraints_route@9",
+    "56": {
+      "op": "match getValidatorConfig getValidatorState getPools getNodePoolAssignments main_getMbrAmounts_route@8 main_getProtocolConstraints_route@9 getStakedPoolsForAccount",
       "stack_out": []
     },
-    "65": {
+    "72": {
       "op": "err"
     },
-    "66": {
+    "73": {
       "error": "stub",
       "block": "main_getProtocolConstraints_route@9",
       "stack_in": [],
       "op": "err // stub"
     },
-    "67": {
+    "74": {
       "error": "stub",
       "block": "main_getMbrAmounts_route@8",
       "stack_in": [],
       "op": "err // stub"
     },
-    "68": {
-      "block": "main___algots__.defaultCreate@13",
+    "75": {
+      "block": "main___algots__.defaultCreate@14",
       "stack_in": [],
       "op": "txn OnCompletion",
       "defined_out": [
@@ -132,7 +136,7 @@
         "tmp%7#0"
       ]
     },
-    "70": {
+    "77": {
       "op": "!",
       "defined_out": [
         "tmp%8#0"
@@ -141,7 +145,7 @@
         "tmp%8#0"
       ]
     },
-    "71": {
+    "78": {
       "op": "txn ApplicationID",
       "defined_out": [
         "tmp%8#0",
@@ -152,7 +156,7 @@
         "tmp%9#0"
       ]
     },
-    "73": {
+    "80": {
       "op": "!",
       "defined_out": [
         "tmp%10#0",
@@ -163,7 +167,7 @@
         "tmp%10#0"
       ]
     },
-    "74": {
+    "81": {
       "op": "&&",
       "defined_out": [
         "tmp%11#0"
@@ -172,12 +176,12 @@
         "tmp%11#0"
       ]
     },
-    "75": {
+    "82": {
       "error": "OnCompletion must be NoOp && can only call when creating",
       "op": "assert // OnCompletion must be NoOp && can only call when creating",
       "stack_out": []
     },
-    "76": {
+    "83": {
       "op": "pushint 1 // 1",
       "defined_out": [
         "1"
@@ -186,11 +190,11 @@
         "1"
       ]
     },
-    "78": {
+    "85": {
       "op": "return",
       "stack_out": []
     },
-    "79": {
+    "86": {
       "subroutine": "smart_contracts/reti/contract.algo.ts::Reti.getValidatorConfig[routing]",
       "params": {},
       "block": "getValidatorConfig",
@@ -203,7 +207,7 @@
         "tmp%0#0"
       ]
     },
-    "82": {
+    "89": {
       "op": "len",
       "defined_out": [
         "len%0#0"
@@ -212,7 +216,7 @@
         "len%0#0"
       ]
     },
-    "83": {
+    "90": {
       "op": "intc_0 // 8",
       "defined_out": [
         "8",
@@ -223,7 +227,7 @@
         "8"
       ]
     },
-    "84": {
+    "91": {
       "op": "==",
       "defined_out": [
         "eq%0#0"
@@ -232,16 +236,16 @@
         "eq%0#0"
       ]
     },
-    "85": {
+    "92": {
       "error": "invalid number of bytes for arc4.uint64",
       "op": "assert // invalid number of bytes for arc4.uint64",
       "stack_out": []
     },
-    "86": {
+    "93": {
       "error": "stub",
       "op": "err // stub"
     },
-    "87": {
+    "94": {
       "subroutine": "smart_contracts/reti/contract.algo.ts::Reti.getValidatorState[routing]",
       "params": {},
       "block": "getValidatorState",
@@ -254,7 +258,7 @@
         "tmp%0#0"
       ]
     },
-    "90": {
+    "97": {
       "op": "len",
       "defined_out": [
         "len%0#0"
@@ -263,7 +267,7 @@
         "len%0#0"
       ]
     },
-    "91": {
+    "98": {
       "op": "intc_0 // 8",
       "defined_out": [
         "8",
@@ -274,7 +278,7 @@
         "8"
       ]
     },
-    "92": {
+    "99": {
       "op": "==",
       "defined_out": [
         "eq%0#0"
@@ -283,16 +287,16 @@
         "eq%0#0"
       ]
     },
-    "93": {
+    "100": {
       "error": "invalid number of bytes for arc4.uint64",
       "op": "assert // invalid number of bytes for arc4.uint64",
       "stack_out": []
     },
-    "94": {
+    "101": {
       "error": "stub",
       "op": "err // stub"
     },
-    "95": {
+    "102": {
       "subroutine": "smart_contracts/reti/contract.algo.ts::Reti.getPools[routing]",
       "params": {},
       "block": "getPools",
@@ -305,7 +309,7 @@
         "tmp%0#0"
       ]
     },
-    "98": {
+    "105": {
       "op": "len",
       "defined_out": [
         "len%0#0"
@@ -314,7 +318,7 @@
         "len%0#0"
       ]
     },
-    "99": {
+    "106": {
       "op": "intc_0 // 8",
       "defined_out": [
         "8",
@@ -325,7 +329,7 @@
         "8"
       ]
     },
-    "100": {
+    "107": {
       "op": "==",
       "defined_out": [
         "eq%0#0"
@@ -334,16 +338,16 @@
         "eq%0#0"
       ]
     },
-    "101": {
+    "108": {
       "error": "invalid number of bytes for arc4.uint64",
       "op": "assert // invalid number of bytes for arc4.uint64",
       "stack_out": []
     },
-    "102": {
+    "109": {
       "error": "stub",
       "op": "err // stub"
     },
-    "103": {
+    "110": {
       "subroutine": "smart_contracts/reti/contract.algo.ts::Reti.getNodePoolAssignments[routing]",
       "params": {},
       "block": "getNodePoolAssignments",
@@ -356,7 +360,7 @@
         "tmp%0#0"
       ]
     },
-    "106": {
+    "113": {
       "op": "len",
       "defined_out": [
         "len%0#0"
@@ -365,7 +369,7 @@
         "len%0#0"
       ]
     },
-    "107": {
+    "114": {
       "op": "intc_0 // 8",
       "defined_out": [
         "8",
@@ -376,7 +380,7 @@
         "8"
       ]
     },
-    "108": {
+    "115": {
       "op": "==",
       "defined_out": [
         "eq%0#0"
@@ -385,12 +389,63 @@
         "eq%0#0"
       ]
     },
-    "109": {
+    "116": {
       "error": "invalid number of bytes for arc4.uint64",
       "op": "assert // invalid number of bytes for arc4.uint64",
       "stack_out": []
     },
-    "110": {
+    "117": {
+      "error": "stub",
+      "op": "err // stub"
+    },
+    "118": {
+      "subroutine": "smart_contracts/reti/contract.algo.ts::Reti.getStakedPoolsForAccount[routing]",
+      "params": {},
+      "block": "getStakedPoolsForAccount",
+      "stack_in": [],
+      "op": "txna ApplicationArgs 1",
+      "defined_out": [
+        "staker#0"
+      ],
+      "stack_out": [
+        "staker#0"
+      ]
+    },
+    "121": {
+      "op": "len",
+      "defined_out": [
+        "len%0#0"
+      ],
+      "stack_out": [
+        "len%0#0"
+      ]
+    },
+    "122": {
+      "op": "pushint 32 // 32",
+      "defined_out": [
+        "32",
+        "len%0#0"
+      ],
+      "stack_out": [
+        "len%0#0",
+        "32"
+      ]
+    },
+    "124": {
+      "op": "==",
+      "defined_out": [
+        "eq%0#0"
+      ],
+      "stack_out": [
+        "eq%0#0"
+      ]
+    },
+    "125": {
+      "error": "invalid number of bytes for arc4.static_array<arc4.uint8, 32>",
+      "op": "assert // invalid number of bytes for arc4.static_array<arc4.uint8, 32>",
+      "stack_out": []
+    },
+    "126": {
       "error": "stub",
       "op": "err // stub"
     }

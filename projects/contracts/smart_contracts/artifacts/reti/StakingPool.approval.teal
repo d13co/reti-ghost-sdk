@@ -1,0 +1,49 @@
+#pragma version 11
+#pragma typetrack false
+
+// @algorandfoundation/algorand-typescript/arc4/index.d.ts::Contract.approvalProgram() -> uint64:
+main:
+    // smart_contracts/reti/stakingPool.algo.ts:9
+    // export class StakingPool extends Contract {
+    txn NumAppArgs
+    bz main___algots__.defaultCreate@5
+    pushbytes 0x5cfbb057 // method "getStakerInfo(address)(address,uint64,uint64,uint64,uint64)"
+    txna ApplicationArgs 0
+    match main_getStakerInfo_route@3
+    err
+
+main_getStakerInfo_route@3:
+    // smart_contracts/reti/stakingPool.algo.ts:10
+    // @abimethod({ readonly: true })
+    txn OnCompletion
+    !
+    txn ApplicationID
+    &&
+    assert // OnCompletion must be NoOp && can only call when not creating
+    b getStakerInfo
+
+main___algots__.defaultCreate@5:
+    // smart_contracts/reti/stakingPool.algo.ts:9
+    // export class StakingPool extends Contract {
+    txn OnCompletion
+    !
+    txn ApplicationID
+    !
+    &&
+    assert // OnCompletion must be NoOp && can only call when creating
+    pushint 1 // 1
+    return
+
+
+// smart_contracts/reti/stakingPool.algo.ts::StakingPool.getStakerInfo[routing]() -> void:
+getStakerInfo:
+    // smart_contracts/reti/stakingPool.algo.ts:10
+    // @abimethod({ readonly: true })
+    txna ApplicationArgs 1
+    len
+    pushint 32 // 32
+    ==
+    assert // invalid number of bytes for arc4.static_array<arc4.uint8, 32>
+    // smart_contracts/reti/stakingPool.algo.ts:12
+    // err("stub");
+    err // stub

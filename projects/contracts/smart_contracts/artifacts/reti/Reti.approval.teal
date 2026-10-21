@@ -7,15 +7,15 @@ main:
     // smart_contracts/reti/contract.algo.ts:9
     // export class Reti extends Contract {
     txn NumAppArgs
-    bz main___algots__.defaultCreate@13
+    bz main___algots__.defaultCreate@14
     txn OnCompletion
     !
     assert // OnCompletion must be NoOp
     txn ApplicationID
     assert
-    pushbytess 0x75aff61d 0x1f2f0109 0x910e94ac 0x7bbb6c8d 0x8a87142d 0xd1366cc3 // method "getValidatorConfig(uint64)(uint64,address,address,uint64,uint8,address,uint64[4],uint64,uint64,uint64,uint32,uint32,address,uint64,uint64,uint8,uint64,uint64)", method "getValidatorState(uint64)(uint16,uint64,uint64,uint64)", method "getPools(uint64)(uint64,uint16,uint64)[]", method "getNodePoolAssignments(uint64)((uint64[3])[8])", method "getMbrAmounts()(uint64,uint64,uint64,uint64)", method "getProtocolConstraints()(uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64)"
+    pushbytess 0x75aff61d 0x1f2f0109 0x910e94ac 0x7bbb6c8d 0x8a87142d 0xd1366cc3 0xf846dd7a // method "getValidatorConfig(uint64)(uint64,address,address,uint64,uint8,address,uint64[4],uint64,uint64,uint64,uint32,uint32,address,uint64,uint64,uint8,uint64,uint64)", method "getValidatorState(uint64)(uint16,uint64,uint64,uint64)", method "getPools(uint64)(uint64,uint16,uint64)[]", method "getNodePoolAssignments(uint64)((uint64[3])[8])", method "getMbrAmounts()(uint64,uint64,uint64,uint64)", method "getProtocolConstraints()(uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64)", method "getStakedPoolsForAccount(address)(uint64,uint64,uint64)[]"
     txna ApplicationArgs 0
-    match getValidatorConfig getValidatorState getPools getNodePoolAssignments main_getMbrAmounts_route@8 main_getProtocolConstraints_route@9
+    match getValidatorConfig getValidatorState getPools getNodePoolAssignments main_getMbrAmounts_route@8 main_getProtocolConstraints_route@9 getStakedPoolsForAccount
     err
 
 main_getProtocolConstraints_route@9:
@@ -28,7 +28,7 @@ main_getMbrAmounts_route@8:
     // err("stub");
     err // stub
 
-main___algots__.defaultCreate@13:
+main___algots__.defaultCreate@14:
     // smart_contracts/reti/contract.algo.ts:9
     // export class Reti extends Contract {
     txn OnCompletion
@@ -93,5 +93,19 @@ getNodePoolAssignments:
     ==
     assert // invalid number of bytes for arc4.uint64
     // smart_contracts/reti/contract.algo.ts:27
+    // err("stub");
+    err // stub
+
+
+// smart_contracts/reti/contract.algo.ts::Reti.getStakedPoolsForAccount[routing]() -> void:
+getStakedPoolsForAccount:
+    // smart_contracts/reti/contract.algo.ts:40
+    // @abimethod({ readonly: true })
+    txna ApplicationArgs 1
+    len
+    pushint 32 // 32
+    ==
+    assert // invalid number of bytes for arc4.static_array<arc4.uint8, 32>
+    // smart_contracts/reti/contract.algo.ts:42
     // err("stub");
     err // stub

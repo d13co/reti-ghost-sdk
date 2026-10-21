@@ -4,6 +4,10 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  algosdk: file:vendor/algosdk-3.8.0-dt.2.tgz
+  '@algorandfoundation/algokit-utils': file:vendor/algorandfoundation-algokit-utils-9.2.3-dt.2.tgz
+
 importers:
 
   .: {}
@@ -16,13 +20,13 @@ importers:
     devDependencies:
       '@algorandfoundation/algokit-client-generator':
         specifier: ^6.0.0
-        version: 6.0.1(@algorandfoundation/algokit-utils@9.2.0(algosdk@3.5.2))(algosdk@3.5.2)
+        version: 6.0.1(@algorandfoundation/algokit-utils@file:vendor/algorandfoundation-algokit-utils-9.2.3-dt.2.tgz(algosdk@file:vendor/algosdk-3.8.0-dt.2.tgz))(algosdk@file:vendor/algosdk-3.8.0-dt.2.tgz)
       '@algorandfoundation/algokit-utils':
-        specifier: ^9.0.0
-        version: 9.2.0(algosdk@3.5.2)
+        specifier: file:../../vendor/algorandfoundation-algokit-utils-9.2.3-dt.2.tgz
+        version: file:vendor/algorandfoundation-algokit-utils-9.2.3-dt.2.tgz(algosdk@file:vendor/algosdk-3.8.0-dt.2.tgz)
       '@algorandfoundation/algokit-utils-debug':
         specifier: ^1.0.4
-        version: 1.0.4(@algorandfoundation/algokit-utils@9.2.0(algosdk@3.5.2))(algosdk@3.5.2)
+        version: 1.0.4(@algorandfoundation/algokit-utils@file:vendor/algorandfoundation-algokit-utils-9.2.3-dt.2.tgz(algosdk@file:vendor/algosdk-3.8.0-dt.2.tgz))(algosdk@file:vendor/algosdk-3.8.0-dt.2.tgz)
       '@algorandfoundation/puya-ts':
         specifier: ^1.0.1
         version: 1.0.1
@@ -36,14 +40,14 @@ importers:
         specifier: ^25.0.3
         version: 25.0.3
       algosdk:
-        specifier: ^3.0.0
-        version: 3.5.2
+        specifier: file:../../vendor/algosdk-3.8.0-dt.2.tgz
+        version: file:vendor/algosdk-3.8.0-dt.2.tgz
       dotenv:
         specifier: ^16.4.7
         version: 16.6.1
       ghostkit:
-        specifier: ^0.0.4
-        version: 0.0.4
+        specifier: file:../../vendor/ghostkit-0.1.0-dt.1.tgz
+        version: file:vendor/ghostkit-0.1.0-dt.1.tgz
       ts-node-dev:
         specifier: ^2.0.0
         version: 2.0.0(@types/node@25.0.3)(typescript@5.9.3)
@@ -54,11 +58,11 @@ importers:
   projects/sdk:
     dependencies:
       '@algorandfoundation/algokit-utils':
-        specifier: ^9.2.0
-        version: 9.2.0(algosdk@3.5.2)
+        specifier: file:../../vendor/algorandfoundation-algokit-utils-9.2.3-dt.2.tgz
+        version: file:vendor/algorandfoundation-algokit-utils-9.2.3-dt.2.tgz(algosdk@file:vendor/algosdk-3.8.0-dt.2.tgz)
       algosdk:
-        specifier: ^3.5.2
-        version: 3.5.2
+        specifier: file:../../vendor/algosdk-3.8.0-dt.2.tgz
+        version: file:vendor/algosdk-3.8.0-dt.2.tgz
     devDependencies:
       '@types/node':
         specifier: ^25.0.3
@@ -74,6 +78,7 @@ packages:
 
   '@algorandfoundation/algokit-client-generator@6.0.1':
     resolution: {integrity: sha512-9IMblhFK7BX8vC5R9txb9wWwQTW1ThzraBWwzhk4niE0kZMzYIh5ZD+WVUxg+zTtwK66ziQVU1NO/v9Q8pEyzw==}
+    version: 6.0.1
     engines: {node: '>=20.0'}
     hasBin: true
     peerDependencies:
@@ -82,14 +87,16 @@ packages:
 
   '@algorandfoundation/algokit-utils-debug@1.0.4':
     resolution: {integrity: sha512-Sx1M6DTRUcgrOc5Q289G1K3xKf/8JzGXnB6LD7DXEnpnkNLenHForlqHH5vAsN1RY6H2viwYSxEFmKItqY9WDQ==}
+    version: 1.0.4
     engines: {node: '>=18.0'}
     peerDependencies:
       '@algorandfoundation/algokit-utils': ^9.0.0
       algosdk: ^3.0.0
 
-  '@algorandfoundation/algokit-utils@9.2.0':
-    resolution: {integrity: sha512-jILpK3PlSJ55crS8+Dl7iIiADEj/VowokTGSVEEneDG41XM3jMmogGVpCNipBil/YAGC2eh2yc4l9iHnfQdT/g==}
-    engines: {node: '>=20.0'}
+  '@algorandfoundation/algokit-utils@file:vendor/algorandfoundation-algokit-utils-9.2.3-dt.2.tgz':
+    resolution: {integrity: sha512-0WooFIVF4MpfZh9XjagDzdpn46iBAV3+wVTvWS6Iy/t9rsmhHs3JZVX2YJFZCRDSrBC5BVfaYEHogg8NCyZAzA==, tarball: file:vendor/algorandfoundation-algokit-utils-9.2.3-dt.2.tgz}
+    version: 9.2.3-dt.2
+    engines: {node: '>=22.0'}
     peerDependencies:
       algosdk: ^3.5.2
 
@@ -354,9 +361,10 @@ packages:
     resolution: {integrity: sha512-08k7pBQnkaUB5p+jL7f1TRaUIlTSDE0cesFu1mD7llLao+1cAhtvvZmGE3OnisTd0xOn118QMw74SRqddqaYvw==}
     engines: {node: '>= 14'}
 
-  algosdk@3.5.2:
-    resolution: {integrity: sha512-frhGtZl1JvfrLRKmMvUm880wj4OiWsWo2FhbreNWh7pdFsKuWPj60fV682wt/CYefLI70iwHavPOwGBkTVt0VA==}
-    engines: {node: '>=18.0.0'}
+  algosdk@file:vendor/algosdk-3.8.0-dt.2.tgz:
+    resolution: {integrity: sha512-va5fhb2CxkIJVfh4iJPZH+p8FVhTY09te/r45ogBPfYPeB4XNUOuibgRXcPwsvl4r1pyMMAKWqg+XTxwAr+HSw==, tarball: file:vendor/algosdk-3.8.0-dt.2.tgz}
+    version: 3.8.0-dt.2
+    engines: {node: '>=22.0'}
 
   ansi-regex@5.0.1:
     resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
@@ -499,8 +507,9 @@ packages:
   get-tsconfig@4.13.0:
     resolution: {integrity: sha512-1VKTZJCwBrvbd+Wn3AOgQP/2Av+TfTCOlE4AcRJE72W1ksZXbAx8PPBR9RzgTeSPzlPMHrbANMH3LbltH73wxQ==}
 
-  ghostkit@0.0.4:
-    resolution: {integrity: sha512-QhTxrO0xK6EX0KwNTa3lXE01ifb/PVNbOOaojPsBRULtr56/oesbyRaM5U9KvRgMGPzo4b77RzZ+MvT06TmyeA==}
+  ghostkit@file:vendor/ghostkit-0.1.0-dt.1.tgz:
+    resolution: {integrity: sha512-4b7FO/tmYMjk1Kt8m2H+PwXE69cLj3iKtnfqHdPeRoE4fh7fK4F9EztF0nk0CDJhJQudv9s68Z5P5I1WZdTLjQ==, tarball: file:vendor/ghostkit-0.1.0-dt.1.tgz}
+    version: 0.1.0-dt.1
     hasBin: true
 
   glob-parent@5.1.2:
@@ -820,24 +829,24 @@ packages:
 
 snapshots:
 
-  '@algorandfoundation/algokit-client-generator@6.0.1(@algorandfoundation/algokit-utils@9.2.0(algosdk@3.5.2))(algosdk@3.5.2)':
+  '@algorandfoundation/algokit-client-generator@6.0.1(@algorandfoundation/algokit-utils@file:vendor/algorandfoundation-algokit-utils-9.2.3-dt.2.tgz(algosdk@file:vendor/algosdk-3.8.0-dt.2.tgz))(algosdk@file:vendor/algosdk-3.8.0-dt.2.tgz)':
     dependencies:
-      '@algorandfoundation/algokit-utils': 9.2.0(algosdk@3.5.2)
-      algosdk: 3.5.2
+      '@algorandfoundation/algokit-utils': file:vendor/algorandfoundation-algokit-utils-9.2.3-dt.2.tgz(algosdk@file:vendor/algosdk-3.8.0-dt.2.tgz)
+      algosdk: file:vendor/algosdk-3.8.0-dt.2.tgz
       chalk: 5.6.2
       change-case: 5.4.4
       commander: 14.0.2
       jsonschema: 1.5.0
 
-  '@algorandfoundation/algokit-utils-debug@1.0.4(@algorandfoundation/algokit-utils@9.2.0(algosdk@3.5.2))(algosdk@3.5.2)':
+  '@algorandfoundation/algokit-utils-debug@1.0.4(@algorandfoundation/algokit-utils@file:vendor/algorandfoundation-algokit-utils-9.2.3-dt.2.tgz(algosdk@file:vendor/algosdk-3.8.0-dt.2.tgz))(algosdk@file:vendor/algosdk-3.8.0-dt.2.tgz)':
     dependencies:
-      '@algorandfoundation/algokit-utils': 9.2.0(algosdk@3.5.2)
-      algosdk: 3.5.2
+      '@algorandfoundation/algokit-utils': file:vendor/algorandfoundation-algokit-utils-9.2.3-dt.2.tgz(algosdk@file:vendor/algosdk-3.8.0-dt.2.tgz)
+      algosdk: file:vendor/algosdk-3.8.0-dt.2.tgz
       buffer: 6.0.3
 
-  '@algorandfoundation/algokit-utils@9.2.0(algosdk@3.5.2)':
+  '@algorandfoundation/algokit-utils@file:vendor/algorandfoundation-algokit-utils-9.2.3-dt.2.tgz(algosdk@file:vendor/algosdk-3.8.0-dt.2.tgz)':
     dependencies:
-      algosdk: 3.5.2
+      algosdk: file:vendor/algosdk-3.8.0-dt.2.tgz
       buffer: 6.0.3
 
   '@algorandfoundation/algorand-typescript@1.0.1(tslib@2.8.1)':
@@ -1015,7 +1024,7 @@ snapshots:
 
   algorand-msgpack@1.1.0: {}
 
-  algosdk@3.5.2:
+  algosdk@file:vendor/algosdk-3.8.0-dt.2.tgz:
     dependencies:
       algorand-msgpack: 1.1.0
       hi-base32: 0.5.1
@@ -1172,10 +1181,11 @@ snapshots:
     dependencies:
       resolve-pkg-maps: 1.0.0
 
-  ghostkit@0.0.4:
+  ghostkit@file:vendor/ghostkit-0.1.0-dt.1.tgz:
     dependencies:
-      '@algorandfoundation/algokit-utils': 9.2.0(algosdk@3.5.2)
-      algosdk: 3.5.2
+      '@algorandfoundation/algokit-utils': file:vendor/algorandfoundation-algokit-utils-9.2.3-dt.2.tgz(algosdk@file:vendor/algosdk-3.8.0-dt.2.tgz)
+      algosdk: file:vendor/algosdk-3.8.0-dt.2.tgz
+      change-case: 5.4.4
 
   glob-parent@5.1.2:
     dependencies:
