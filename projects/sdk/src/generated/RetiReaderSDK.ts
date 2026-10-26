@@ -23,7 +23,7 @@ import { TransactionComposer, AppCallMethodCall, AppMethodCallTransactionArgumen
 import { SendParams, SendSingleTransactionResult, SendAtomicTransactionComposerResults } from '@algorandfoundation/algokit-utils/types/transaction'
 import { Address, encodeAddress, modelsv2, OnApplicationComplete, Transaction, TransactionSigner } from 'algosdk'
 
-export const APP_SPEC: Arc56Contract = {"name":"RetiReader","structs":{"AssetInfo":[{"name":"assetId","type":"uint64"},{"name":"creator","type":"address"},{"name":"total","type":"uint64"},{"name":"decimals","type":"uint8"},{"name":"unitName","type":"string"},{"name":"name","type":"string"}],"Constraints":[{"name":"epochPayoutRoundsMin","type":"uint64"},{"name":"epochPayoutRoundsMax","type":"uint64"},{"name":"minPctToValidatorWFourDecimals","type":"uint64"},{"name":"maxPctToValidatorWFourDecimals","type":"uint64"},{"name":"minEntryStake","type":"uint64"},{"name":"maxAlgoPerPool","type":"uint64"},{"name":"maxAlgoPerValidator","type":"uint64"},{"name":"amtConsideredSaturated","type":"uint64"},{"name":"maxNodes","type":"uint64"},{"name":"maxPoolsPerNode","type":"uint64"},{"name":"maxStakersPerPool","type":"uint64"}],"MbrAmounts":[{"name":"addValidatorMbr","type":"uint64"},{"name":"addPoolMbr","type":"uint64"},{"name":"poolInitMbr","type":"uint64"},{"name":"addStakerMbr","type":"uint64"}],"NodePoolAssignmentConfig":[{"name":"nodes","type":"(uint64[3])[8]"}],"PoolInfo":[{"name":"poolAppId","type":"uint64"},{"name":"totalStakers","type":"uint16"},{"name":"totalAlgoStaked","type":"uint64"}],"StakedInfo":[{"name":"account","type":"address"},{"name":"balance","type":"uint64"},{"name":"totalRewarded","type":"uint64"},{"name":"rewardTokenBalance","type":"uint64"},{"name":"entryRound","type":"uint64"}],"ValidatorConfig":[{"name":"id","type":"uint64"},{"name":"owner","type":"address"},{"name":"manager","type":"address"},{"name":"nfdForInfo","type":"uint64"},{"name":"entryGatingType","type":"uint8"},{"name":"entryGatingAddress","type":"address"},{"name":"entryGatingAssets","type":"uint64[4]"},{"name":"gatingAssetMinBalance","type":"uint64"},{"name":"rewardTokenId","type":"uint64"},{"name":"rewardPerPayout","type":"uint64"},{"name":"epochRoundLength","type":"uint32"},{"name":"percentToValidator","type":"uint32"},{"name":"validatorCommissionAddress","type":"address"},{"name":"minEntryStake","type":"uint64"},{"name":"maxAlgoPerPool","type":"uint64"},{"name":"poolsPerNode","type":"uint8"},{"name":"sunsettingOn","type":"uint64"},{"name":"sunsettingTo","type":"uint64"}],"ValidatorCurState":[{"name":"numPools","type":"uint16"},{"name":"totalStakers","type":"uint64"},{"name":"totalAlgoStaked","type":"uint64"},{"name":"rewardTokenHeldBack","type":"uint64"}],"AccountBalance":[{"name":"account","type":"address"},{"name":"balance","type":"uint64"},{"name":"minBalance","type":"uint64"}],"AssetHolding":[{"name":"account","type":"address"},{"name":"assetId","type":"uint64"},{"name":"optedIn","type":"bool"},{"name":"balance","type":"uint64"}],"MbrAmountsAndProtocolConstraints":[{"name":"mbrAmounts","type":"MbrAmounts"},{"name":"constraints","type":"Constraints"}],"PoolState":[{"name":"poolAppId","type":"uint64"},{"name":"exists","type":"bool"},{"name":"validatorId","type":"uint64"},{"name":"poolId","type":"uint64"},{"name":"numStakers","type":"uint64"},{"name":"staked","type":"uint64"},{"name":"minEntryStake","type":"uint64"},{"name":"lastPayout","type":"uint64"},{"name":"epochNumber","type":"uint64"},{"name":"algodVer","type":"string"},{"name":"roundsPerDay","type":"uint64"},{"name":"binRoundStart","type":"uint64"},{"name":"rewardAccumulator","type":"uint64"},{"name":"stakeAccumulator","type":"byte[]"},{"name":"ewma","type":"byte[]"},{"name":"balance","type":"uint64"},{"name":"minBalance","type":"uint64"}],"PoolTotals":[{"name":"poolAppId","type":"uint64"},{"name":"numStakers","type":"uint64"},{"name":"staked","type":"uint64"}],"RegistryTotals":[{"name":"numValidators","type":"uint64"},{"name":"numStakers","type":"uint64"},{"name":"staked","type":"uint64"}],"StakerPosition":[{"name":"staker","type":"address"},{"name":"validatorId","type":"uint64"},{"name":"poolId","type":"uint64"},{"name":"poolAppId","type":"uint64"},{"name":"info","type":"StakedInfo"}],"Validator":[{"name":"config","type":"ValidatorConfig"},{"name":"state","type":"ValidatorCurState"},{"name":"poolInfo","type":"(uint64,uint16,uint64)[]"},{"name":"nodeAssignment","type":"NodePoolAssignmentConfig"}],"ValidatorPoolInfo":[{"name":"validatorId","type":"uint64"},{"name":"poolInfo","type":"PoolInfo"}],"ValidatorTotals":[{"name":"validatorId","type":"uint64"},{"name":"numPools","type":"uint64"},{"name":"totalStakers","type":"uint64"},{"name":"totalAlgoStaked","type":"uint64"}]},"methods":[{"name":"getMbrAmountsAndProtocolConstraints","args":[{"type":"uint64","name":"registryAppId"}],"returns":{"type":"((uint64,uint64,uint64,uint64),(uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64))","struct":"MbrAmountsAndProtocolConstraints"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"The registry's MBR amounts and protocol constraints.","events":[],"recommendations":{}},{"name":"getValidatorConfig","args":[{"type":"uint64","name":"registryAppId"},{"type":"uint64[]","name":"validatorIds"}],"returns":{"type":"(uint64,address,address,uint64,uint8,address,uint64[4],uint64,uint64,uint64,uint32,uint32,address,uint64,uint64,uint8,uint64,uint64)","struct":"ValidatorConfig"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each validator's config, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`","events":[],"recommendations":{}},{"name":"getValidatorStates","args":[{"type":"uint64","name":"registryAppId"},{"type":"uint64[]","name":"validatorIds"}],"returns":{"type":"(uint16,uint64,uint64,uint64)","struct":"ValidatorCurState"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each validator's current state, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`","events":[],"recommendations":{}},{"name":"getPools","args":[{"type":"uint64","name":"registryAppId"},{"type":"uint64[]","name":"validatorIds"}],"returns":{"type":"(uint64,(uint64,uint16,uint64))","struct":"ValidatorPoolInfo"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each validator's pools: one entry per pool, tagged with its validator id. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`","events":[],"recommendations":{}},{"name":"getNodePoolAssignments","args":[{"type":"uint64","name":"registryAppId"},{"type":"uint64[]","name":"validatorIds"}],"returns":{"type":"((uint64[3])[8])","struct":"NodePoolAssignmentConfig"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each validator's node to pool assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`","events":[],"recommendations":{}},{"name":"getValidators","args":[{"type":"uint64","name":"registryAppId"},{"type":"uint64[]","name":"validatorIds"}],"returns":{"type":"((uint64,address,address,uint64,uint8,address,uint64[4],uint64,uint64,uint64,uint32,uint32,address,uint64,uint64,uint8,uint64,uint64),(uint16,uint64,uint64,uint64),(uint64,uint16,uint64)[],((uint64[3])[8]))","struct":"Validator"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each validator's config, state, pools and node assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=2 maxPerGroup=64`","events":[],"recommendations":{}},{"name":"getBlockTimestamps","args":[{"type":"uint64","name":"num"}],"returns":{"type":"uint64"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Timestamps of the `num` blocks before the first valid round, oldest first.","events":[],"recommendations":{}},{"name":"getRoundTimestamp","args":[],"returns":{"type":"uint64"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"The simulated round's block timestamp. Ghostkit sets first and last valid to one past the simulated round, so\nthat round is `Txn.firstValid - 1`. Unpinned, it's the newest block the call can read, near the latest round.","events":[],"recommendations":{}},{"name":"firstRoundAtOrAfter","args":[{"type":"uint64","name":"start"},{"type":"uint64","name":"target"}],"returns":{"type":"(uint64,uint64)"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"The first round from `start` up to the simulated round whose block timestamp is at or after `target`, with that\ntimestamp; `[0, 0]` if there is none. `start` must be within the 1,000 rounds before the simulated round that a\nprogram can read.","events":[],"recommendations":{}},{"name":"getAlgodVersion","args":[{"type":"uint64[]","name":"poolAppIds"}],"returns":{"type":"string"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each pool's reported algod version, or \"\" if it has none. `@ghostkit-chunk poolAppIds refsPerItem=1`","events":[],"recommendations":{}},{"name":"getAssets","args":[{"type":"uint64[]","name":"assetIds"}],"returns":{"type":"(uint64,address,uint64,uint8,string,string)","struct":"AssetInfo"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each asset's params; a zero creator if the asset doesn't exist. `@ghostkit-chunk assetIds refsPerItem=1`","events":[],"recommendations":{}},{"name":"getPoolBalancesAndLastPayouts","args":[{"type":"uint64[]","name":"poolAppIds"}],"returns":{"type":"(uint64,uint64)"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each pool's balance and last payout round. `@ghostkit-chunk poolAppIds refsPerItem=2`","events":[],"recommendations":{}},{"name":"getPoolStates","args":[{"type":"uint64[]","name":"pools"}],"returns":{"type":"(uint64,bool,uint64,uint64,uint64,uint64,uint64,uint64,uint64,string,uint64,uint64,uint64,byte[],byte[],uint64,uint64)","struct":"PoolState"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each pool's global state and account balance, in order. `@ghostkit-chunk pools refsPerItem=2`","events":[],"recommendations":{}},{"name":"getStakerPositions","args":[{"type":"uint64","name":"registryAppId"},{"type":"address[]","name":"stakers"}],"returns":{"type":"(address,uint64,uint64,uint64,(address,uint64,uint64,uint64,uint64))","struct":"StakerPosition"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Every position of each staker: one entry per pool the staker is in, stakers in order. `@ghostkit-chunk stakers refsPerItem=48 maxPerTxn=8 maxPerGroup=16`","events":[],"recommendations":{}},{"name":"getAccountBalances","args":[{"type":"address[]","name":"accounts"}],"returns":{"type":"(address,uint64,uint64)","struct":"AccountBalance"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each account's balance and minimum balance, in order. Zero for accounts that don't exist. `@ghostkit-chunk accounts refsPerItem=1`","events":[],"recommendations":{}},{"name":"getAssetHoldings","args":[{"type":"(address,uint64)[]","name":"holdings"}],"returns":{"type":"(address,uint64,bool,uint64)","struct":"AssetHolding"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each account's holding of an asset, in order. `@ghostkit-chunk holdings refsPerItem=3`","events":[],"recommendations":{}},{"name":"getValidatorTotals","args":[{"type":"uint64","name":"registryAppId"},{"type":"uint64[]","name":"validatorIds"}],"returns":{"type":"(uint64,uint64,uint64,uint64)","struct":"ValidatorTotals"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each validator's pool count, stakers and stake, in order: a small read for charts. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`","events":[],"recommendations":{}},{"name":"getRegistryTotals","args":[{"type":"uint64","name":"registryAppId"}],"returns":{"type":"(uint64,uint64,uint64)","struct":"RegistryTotals"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"The registry's validator count, total stakers and total stake, from its global state: a small read for charts.","events":[],"recommendations":{}},{"name":"getPoolTotals","args":[{"type":"uint64[]","name":"pools"}],"returns":{"type":"(uint64,uint64,uint64)","struct":"PoolTotals"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each pool's stakers and stake, in order: a small read for charts. `@ghostkit-chunk pools refsPerItem=1`","events":[],"recommendations":{}}],"arcs":[22,28],"networks":{},"state":{"schema":{"global":{"ints":0,"bytes":0},"local":{"ints":0,"bytes":0}},"keys":{"global":{},"local":{},"box":{}},"maps":{"global":{},"local":{},"box":{}}},"bareActions":{"create":[],"call":["DeleteApplication","UpdateApplication"]},"sourceInfo":{"approval":{"sourceInfo":[{"pc":[388,430,2833,2922,3924,4016,4080,4345],"errorMessage":"Bytes has valid prefix"},{"pc":[185],"errorMessage":"OnCompletion must be NoOp"},{"pc":[337],"errorMessage":"OnCompletion must be one of UpdateApplication, DeleteApplication && can only call when not creating"},{"pc":[2271,2356,2365],"errorMessage":"application exists"},{"pc":[2111,2116,2130,2135],"errorMessage":"asset exists"},{"pc":[918,2788,2876,3139,3264],"errorMessage":"index access is out of bounds"},{"pc":[461,775,846,889,960,1224,1936,2034,2216,2298,2755,2836,3103,3228,3374,3534,4083],"errorMessage":"invalid array length header"},{"pc":[436],"errorMessage":"invalid number of bytes for Constraints"},{"pc":[394],"errorMessage":"invalid number of bytes for MbrAmounts"},{"pc":[4352],"errorMessage":"invalid number of bytes for NodePoolAssignmentConfig"},{"pc":[2928],"errorMessage":"invalid number of bytes for StakedInfo"},{"pc":[3931],"errorMessage":"invalid number of bytes for ValidatorConfig"},{"pc":[4022],"errorMessage":"invalid number of bytes for ValidatorCurState"},{"pc":[4093],"errorMessage":"invalid number of bytes for arc4.dynamic_array<PoolInfo>"},{"pc":[2848],"errorMessage":"invalid number of bytes for arc4.dynamic_array<ValidatorPoolKey>"},{"pc":[2227,2309,3545],"errorMessage":"invalid number of bytes for arc4.dynamic_array<application>"},{"pc":[2767,3115],"errorMessage":"invalid number of bytes for arc4.dynamic_array<arc4.static_array<arc4.uint8, 32>>"},{"pc":[2045],"errorMessage":"invalid number of bytes for arc4.dynamic_array<asset>"},{"pc":[3240],"errorMessage":"invalid number of bytes for arc4.dynamic_array<smart_contracts/reti_reader/contract.algo.ts::AccountAsset>"},{"pc":[472,786,857,971,1235,1947,3385],"errorMessage":"invalid number of bytes for arc4.dynamic_array<uint64>"},{"pc":[351,453,767,838,952,1216,1809,1866,1875,2747,3366,3495],"errorMessage":"invalid number of bytes for arc4.uint64"},{"pc":[2122],"errorMessage":"overflow"}],"pcOffsetMethod":"none"},"clear":{"sourceInfo":[],"pcOffsetMethod":"none"}},"byteCode":{"approval":"CyAEAAEIAiYPBBUffHUAAgAACm51bVN0YWtlcnMGc3Rha2VkAQAeFR98dQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADBUffHUAAAAAAAAAABQVH3x1AAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAACGFsZ29kVmVyCmxhc3RQYXlvdXQCAG8EbnVtVhwVH3x1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMRtBAJExGRREghME17+ERQSExEJaBCTgDIAEu4gpJwSmLxEyBMLJimsEPTuLSgSMTvUFBPWV+v4Eu0YL7gQMwp3YBPGU7HkEPlww7gSLHVYaBC0hbX0ErCwvEwSUsA5vBCPvMs4ErhqN8zYaAI4TABIAeAGyAfUCawNzBcQF7wX8BkIGpAdbB64JagrTC1AL2QxaDIIAIzEZkIEwGjEYEEQxADIJEkM2GgFJFSQSRBexgASKhxQtshoishlJshiBBrIQIrIBs7Q+SVcEAExXAAQoEkRJFYEgEkSxgATRNmzDshoishlMshiBBrIQIrIBs7Q+SVcEAExXAAQoEkRJFYFYEkRQSbAoTFCwI0M2GgFJFSQSRBc2GgJHAiJZSU4CJAslCEwVEkQiSUsCDEEAG0sCVwIASwFJTgIkC1tLBUyIDDSwIwhFAUL/3oD2ARUffHUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALAjQzYaAUkVJBJEFzYaAkcCIllJTgIkCyUITBUSRCJJSwIMQQAbSwJXAgBLAUlOAiQLW0sFTIgML7AjCEUBQv/eJwawI0MiKUcCNhoBSRUkEkQXNhoCRwIiWUlOAiQLJQhMFRJEIklLAgxBAEpLAlcCAEsBJAtbSUUGSwRMiAxDSUUJIllFByJFBksFSwcMQQAdSwdXAgBLBklOAoESC4ESWEsGFkxQsCMIRQZC/9tJIwhFAUL/rycGsCNDNhoBSRUkEkQXNhoCRwIiWUlOAiQLJQhMFRJEIklLAgxBABtLAlcCAEsBSU4CJAtbSwVMiAwYsCMIRQFC/96AxAEVH3x1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAsCNDNhoBSRUkEkQXNhoCRwIiWUlOAiQLJQhMFRJEIklLAgxBAEJLAlcCAEsBSU4CJAtbSwVJTgJLAYgJNUsCSwKICmNLA0sDiAq3TwRPBIgK908DTwNQgAIBzlBMUExQsCMIRQFC/7eA5gMVH3x1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHOAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAACwI0M2GgFJFSQSRBcxBEwJIwkxAiMJSwENQQANRwLRARawIwhFAUL/6ScHsCNDMQIjCdEBFrAnB7AjQyk2GgFJFSQSRBc2GgJJFSQSRBdMMgYjCUxJSwIOQQAgSdEBSUUFSwMPQQAMSRZLBBZQsCcIsCNDSSMIRQFC/9knCbBC/+0iKTYaAUcCIllJTgIkCyUITBUSRCJJSwIMQQA7SwJXAgBLASQLW0lFBYgJhUEACiqwSSMIRQFC/9xLAycKZUxFBkEADksESRUWVwYCTFCwQv/fKrBC/9qABhUffHUAALAjQyIpNhoBRwIiWUlOAiQLJQhMFRJEIklLAgxBAJFLAlcCAEsBJAtbSUUFiAkjQQAOSwOICOSwSSMIRQFC/9hLA3ELTEUGQAAJSwOICMywQv/lSwNJcQBESwFxAUQWSZMkDkRXBwFLAnEDREsDcQRETwQWSwlQTwQWUE8DUEsCFRZXBgJPA1BMgAIANVBLARWBNQhLAxUWVwYCTwRQTBZXBgJPAkxQTwJQTFCwQv+IIogIZyhMULAjQyk2GgFHAiJZSU4CJAslCEwVEkQiSUsCDEEAM0sCVwIASwEkC1tJRQWICG1BAAsnCbBJIwhFAUL/20sDSXIIRGBMJwtlSEwWTBZQsEL/4ycIsCNDNhoBRwIiWUlOAiQLJQhMFRJEIklLAgxBAZhLAlcCAEsBJAtbSYgIHUEADIgIK7BJIwhFAUL/3ElyB04CSElyCERzAEhOAklyCERzAUhOAkmAC3ZhbGlkYXRvcklkZSJOAk1LAYAGcG9vbElkZSJOAk1LAitlIk4CTUsDJwRlIk4CTUsEgA1taW5FbnRyeVN0YWtlZSJOAk1LBScLZSJOAk1LBoALZXBvY2hOdW1iZXJlIk4CTUsHJwplKU4CTUsIgAxyb3VuZHNQZXJEYXllIk4CTUsJgA1iaW5Sb3VuZFN0YXJ0ZSJOAk1LCoARcmV3YXJkQWNjdW11bGF0b3JlIk4CTUsLgBBzdGFrZUFjY3VtdWxhdG9yZSlOAk1LDIAEZXdtYWUpTgJNTw0WJwUiTxBUUE8NFlBPDBZQTwsWUE8KFlBPCRZQTwgWUE8HFlBLBhUWVwYCTwdQTCcMUEsBFYFvCE8HFk8CTFBPBhZQTwUWUEsEFRZXBgJPBVBLAhZXBgJPAkxQSwEVTwMISwQVFlcGAk8FUEwWVwYCTwJMUE8FFlBPBBZQTwNQTwJQTFBC/nwiiAajKExQsCNDIkkpSTYaAUkVJBJEFzYaAkcCIllJTgKBIAslCEwVEkQiSUsCDEEAwEsCVwIASwGBIAuBIFhJRQixgAT4Rt16shqyGiKyGUsDshiBBrIQIrIBs7Q+SUUJSVcEAExXAAQoEkRJIllJRQiBGAslCEwVEkQiRQVLBEsGDEEAZLFLB1cGAEsFSU4CgRgLgRhYSYEQW4AEXPuwV7IaSwlJTgOyGiKyGUmyGIEGshAisgGztD5JVwQATFcABCgSREkVgUASREsCVwAITwNXCAhPBE8CUExQTwIWUExQsCMIRQVC/5RJIwhFAUL/OYB8FR98dQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALAjQzYaAUcCIllJTgKBIAslCEwVEkQiSUsCDEEAKUsCVwIASwFJTgKBIAuBIFhJcwBITElzAUhOAkwWUEwWULAjCEUBQv/QgDQVH3x1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAsCNDNhoBRwIiWUlOAoEoCyUITBUSRCJJSwIMQQA0SwJXAgBLAUlOAoEoC4EoWElXACBMgSBbSnAATwIWTwNMUCcFIk8DVFBMFlCwIwhFAUL/xYA1FR98dQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACwI0M2GgFJFSQSRBc2GgJHAiJZSU4CJAslCEwVEkQiSUsCDEEANUsCVwIASwFJTgIkC1tLBUsBiAIHSSJZSwFXAghPAlcKCE8DFk8DFlBPAlBMULAjCEUBQv/EgCQVH3x1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACwI0M2GgFJFSQSRBdJJw1lSExJK2VITCcEZUhOAkwWTBZQTBZQsCcOsCNDNhoBRwIiWUlOAiQLJQhMFRJEIklLAgxBAEFLAlcCAEsBJAtbSYgDSUEAEhYiFkxLAVBMULBJIwhFAUL/1kkrZSJOAk1LAScEZSJOAk1PAhZPAhZQTBZQsEL/2icOsCNDigIBi/6L/4gC6kAA9oDyAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAibGL/xaABHWv9h2yGrIaIrIZi/6yGIEGshAisgGztD5JVwQATFcABCgSREkVgfIBEkSJigIBi/6L/4gBtUAAHYAaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACJsYv/FoAEHy8BCbIashoishmL/rIYgQayECKyAbO0PklXBABMVwAEKBJESRWBGhJEiYoCAYv+i/+IAVpAAAIqibGL/xaABJEOlKyyGrIaIrIZi/6yGIEGshAisgGztD5JVwQATFcABCgSREkiWYESCyUISwEVEkSJigIBi/6L/4gBE0AAxIDAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAImxi/8WgAR7u2yNshqyGiKyGYv+shiBBrIQIrIBs7Q+SVcEAExXAAQoEkRJFYHAARJEiYoBATIDi/8WTFAiFlCACQAANQA3AAAAAFCJigIBi/4nDWVIi/9BAAuL/4sADkEAAyNMiSJC//qKAQExGEAACov/MggPQQACI4kiiYoBAYv/FicFUCIWTEsBUEsBUEsBUEsBUEsBUEsBUEsBUCcMUEsBUEsBUEsBUIAEAHEAc1BLAVBMUIAGAAAAAAAAUIk=","clear":"C4EBQw=="},"events":[],"templateVariables":{}} as unknown as Arc56Contract
+export const APP_SPEC: Arc56Contract = {"name":"RetiReader","structs":{"AssetInfo":[{"name":"assetId","type":"uint64"},{"name":"creator","type":"address"},{"name":"total","type":"uint64"},{"name":"decimals","type":"uint8"},{"name":"unitName","type":"string"},{"name":"name","type":"string"}],"Constraints":[{"name":"epochPayoutRoundsMin","type":"uint64"},{"name":"epochPayoutRoundsMax","type":"uint64"},{"name":"minPctToValidatorWFourDecimals","type":"uint64"},{"name":"maxPctToValidatorWFourDecimals","type":"uint64"},{"name":"minEntryStake","type":"uint64"},{"name":"maxAlgoPerPool","type":"uint64"},{"name":"maxAlgoPerValidator","type":"uint64"},{"name":"amtConsideredSaturated","type":"uint64"},{"name":"maxNodes","type":"uint64"},{"name":"maxPoolsPerNode","type":"uint64"},{"name":"maxStakersPerPool","type":"uint64"}],"MbrAmounts":[{"name":"addValidatorMbr","type":"uint64"},{"name":"addPoolMbr","type":"uint64"},{"name":"poolInitMbr","type":"uint64"},{"name":"addStakerMbr","type":"uint64"}],"NodePoolAssignmentConfig":[{"name":"nodes","type":"(uint64[3])[8]"}],"PoolInfo":[{"name":"poolAppId","type":"uint64"},{"name":"totalStakers","type":"uint16"},{"name":"totalAlgoStaked","type":"uint64"}],"StakedInfo":[{"name":"account","type":"address"},{"name":"balance","type":"uint64"},{"name":"totalRewarded","type":"uint64"},{"name":"rewardTokenBalance","type":"uint64"},{"name":"entryRound","type":"uint64"}],"ValidatorConfig":[{"name":"id","type":"uint64"},{"name":"owner","type":"address"},{"name":"manager","type":"address"},{"name":"nfdForInfo","type":"uint64"},{"name":"entryGatingType","type":"uint8"},{"name":"entryGatingAddress","type":"address"},{"name":"entryGatingAssets","type":"uint64[4]"},{"name":"gatingAssetMinBalance","type":"uint64"},{"name":"rewardTokenId","type":"uint64"},{"name":"rewardPerPayout","type":"uint64"},{"name":"epochRoundLength","type":"uint32"},{"name":"percentToValidator","type":"uint32"},{"name":"validatorCommissionAddress","type":"address"},{"name":"minEntryStake","type":"uint64"},{"name":"maxAlgoPerPool","type":"uint64"},{"name":"poolsPerNode","type":"uint8"},{"name":"sunsettingOn","type":"uint64"},{"name":"sunsettingTo","type":"uint64"}],"ValidatorCurState":[{"name":"numPools","type":"uint16"},{"name":"totalStakers","type":"uint64"},{"name":"totalAlgoStaked","type":"uint64"},{"name":"rewardTokenHeldBack","type":"uint64"}],"AccountBalance":[{"name":"account","type":"address"},{"name":"balance","type":"uint64"},{"name":"minBalance","type":"uint64"}],"AssetHolding":[{"name":"account","type":"address"},{"name":"assetId","type":"uint64"},{"name":"optedIn","type":"bool"},{"name":"balance","type":"uint64"}],"MbrAmountsAndProtocolConstraints":[{"name":"mbrAmounts","type":"MbrAmounts"},{"name":"constraints","type":"Constraints"}],"PoolState":[{"name":"poolAppId","type":"uint64"},{"name":"exists","type":"bool"},{"name":"validatorId","type":"uint64"},{"name":"poolId","type":"uint64"},{"name":"numStakers","type":"uint64"},{"name":"staked","type":"uint64"},{"name":"minEntryStake","type":"uint64"},{"name":"lastPayout","type":"uint64"},{"name":"epochNumber","type":"uint64"},{"name":"algodVer","type":"string"},{"name":"roundsPerDay","type":"uint64"},{"name":"binRoundStart","type":"uint64"},{"name":"rewardAccumulator","type":"uint64"},{"name":"stakeAccumulator","type":"byte[]"},{"name":"ewma","type":"byte[]"},{"name":"balance","type":"uint64"},{"name":"minBalance","type":"uint64"}],"PoolTotals":[{"name":"poolAppId","type":"uint64"},{"name":"numStakers","type":"uint64"},{"name":"staked","type":"uint64"}],"RegistryTotals":[{"name":"numValidators","type":"uint64"},{"name":"numStakers","type":"uint64"},{"name":"staked","type":"uint64"}],"StakerPosition":[{"name":"staker","type":"address"},{"name":"validatorId","type":"uint64"},{"name":"poolId","type":"uint64"},{"name":"poolAppId","type":"uint64"},{"name":"info","type":"StakedInfo"}],"Validator":[{"name":"config","type":"ValidatorConfig"},{"name":"state","type":"ValidatorCurState"},{"name":"poolInfo","type":"(uint64,uint16,uint64)[]"},{"name":"nodeAssignment","type":"NodePoolAssignmentConfig"}],"ValidatorPoolInfo":[{"name":"validatorId","type":"uint64"},{"name":"poolInfo","type":"PoolInfo"}],"ValidatorTotals":[{"name":"validatorId","type":"uint64"},{"name":"numPools","type":"uint64"},{"name":"totalStakers","type":"uint64"},{"name":"totalAlgoStaked","type":"uint64"}]},"methods":[{"name":"getMbrAmountsAndProtocolConstraints","args":[{"type":"uint64","name":"registryAppId"}],"returns":{"type":"((uint64,uint64,uint64,uint64),(uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64))","struct":"MbrAmountsAndProtocolConstraints"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"The registry's MBR amounts and protocol constraints.","events":[],"recommendations":{}},{"name":"getValidatorConfig","args":[{"type":"uint64","name":"registryAppId"},{"type":"uint64[]","name":"validatorIds"}],"returns":{"type":"(uint64,address,address,uint64,uint8,address,uint64[4],uint64,uint64,uint64,uint32,uint32,address,uint64,uint64,uint8,uint64,uint64)","struct":"ValidatorConfig"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each validator's config, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`","events":[],"recommendations":{}},{"name":"getValidatorStates","args":[{"type":"uint64","name":"registryAppId"},{"type":"uint64[]","name":"validatorIds"}],"returns":{"type":"(uint16,uint64,uint64,uint64)","struct":"ValidatorCurState"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each validator's current state, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`","events":[],"recommendations":{}},{"name":"getPools","args":[{"type":"uint64","name":"registryAppId"},{"type":"uint64[]","name":"validatorIds"}],"returns":{"type":"(uint64,(uint64,uint16,uint64))","struct":"ValidatorPoolInfo"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each validator's pools: one entry per pool, tagged with its validator id. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`","events":[],"recommendations":{}},{"name":"getNodePoolAssignments","args":[{"type":"uint64","name":"registryAppId"},{"type":"uint64[]","name":"validatorIds"}],"returns":{"type":"((uint64[3])[8])","struct":"NodePoolAssignmentConfig"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each validator's node to pool assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`","events":[],"recommendations":{}},{"name":"getValidators","args":[{"type":"uint64","name":"registryAppId"},{"type":"uint64[]","name":"validatorIds"}],"returns":{"type":"((uint64,address,address,uint64,uint8,address,uint64[4],uint64,uint64,uint64,uint32,uint32,address,uint64,uint64,uint8,uint64,uint64),(uint16,uint64,uint64,uint64),(uint64,uint16,uint64)[],((uint64[3])[8]))","struct":"Validator"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each validator's config, state, pools and node assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=2 maxPerGroup=64`","events":[],"recommendations":{}},{"name":"getBlockTimestamps","args":[{"type":"uint64","name":"num"}],"returns":{"type":"uint64"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Timestamps of the `num` blocks before the first valid round, oldest first.","events":[],"recommendations":{}},{"name":"getRoundTimestamp","args":[],"returns":{"type":"uint64"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"The simulated round's block timestamp. Ghostkit sets first and last valid to one past the simulated round, so\nthat round is `Txn.firstValid - 1`. Unpinned, it's the newest block the call can read, near the latest round.","events":[],"recommendations":{}},{"name":"firstRoundAtOrAfter","args":[{"type":"uint64","name":"start"},{"type":"uint64","name":"target"}],"returns":{"type":"(uint64,uint64)"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"The first round from `start` up to the simulated round whose block timestamp is at or after `target`, with that\ntimestamp; `[0, 0]` if there is none. `start` must be within the 1,000 rounds before the simulated round that a\nprogram can read.","events":[],"recommendations":{}},{"name":"getAlgodVersion","args":[{"type":"uint64[]","name":"poolAppIds"}],"returns":{"type":"string"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each pool's reported algod version, or \"\" if it has none. `@ghostkit-chunk poolAppIds refsPerItem=1`","events":[],"recommendations":{}},{"name":"getAssets","args":[{"type":"uint64[]","name":"assetIds"}],"returns":{"type":"(uint64,address,uint64,uint8,string,string)","struct":"AssetInfo"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each asset's params; a zero creator if the asset doesn't exist. `@ghostkit-chunk assetIds refsPerItem=1`","events":[],"recommendations":{}},{"name":"getPoolBalancesAndLastPayouts","args":[{"type":"uint64[]","name":"poolAppIds"}],"returns":{"type":"(uint64,uint64)"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each pool's balance and last payout round. `@ghostkit-chunk poolAppIds refsPerItem=2`","events":[],"recommendations":{}},{"name":"getPoolStates","args":[{"type":"uint64[]","name":"pools"}],"returns":{"type":"(uint64,bool,uint64,uint64,uint64,uint64,uint64,uint64,uint64,string,uint64,uint64,uint64,byte[],byte[],uint64,uint64)","struct":"PoolState"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each pool's global state and account balance, in order. `@ghostkit-chunk pools refsPerItem=2`","events":[],"recommendations":{}},{"name":"getStakerPositions","args":[{"type":"uint64","name":"registryAppId"},{"type":"address[]","name":"stakers"}],"returns":{"type":"(address,uint64,uint64,uint64,(address,uint64,uint64,uint64,uint64))","struct":"StakerPosition"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Every position of each staker: one entry per pool the staker is in, stakers in order. `@ghostkit-chunk stakers refsPerItem=48 maxPerTxn=8 maxPerGroup=16`","events":[],"recommendations":{}},{"name":"getAccountBalances","args":[{"type":"address[]","name":"accounts"}],"returns":{"type":"(address,uint64,uint64)","struct":"AccountBalance"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each account's balance and minimum balance, in order. Zero for accounts that don't exist. `@ghostkit-chunk accounts refsPerItem=1`","events":[],"recommendations":{}},{"name":"getAssetHoldings","args":[{"type":"(address,uint64)[]","name":"holdings"}],"returns":{"type":"(address,uint64,bool,uint64)","struct":"AssetHolding"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each account's holding of an asset, in order. `@ghostkit-chunk holdings refsPerItem=3`","events":[],"recommendations":{}},{"name":"getValidatorTotals","args":[{"type":"uint64","name":"registryAppId"},{"type":"uint64[]","name":"validatorIds"}],"returns":{"type":"(uint64,uint64,uint64,uint64)","struct":"ValidatorTotals"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each validator's pool count, stakers and stake, in order: a small read for charts. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`","events":[],"recommendations":{}},{"name":"getRegistryTotals","args":[{"type":"uint64","name":"registryAppId"}],"returns":{"type":"(uint64,uint64,uint64)","struct":"RegistryTotals"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"The registry's validator count, total stakers and total stake, from its global state: a small read for charts.","events":[],"recommendations":{}},{"name":"getPoolTotals","args":[{"type":"uint64[]","name":"pools"}],"returns":{"type":"(uint64,uint64,uint64)","struct":"PoolTotals"},"actions":{"create":["NoOp"],"call":["NoOp"]},"readonly":true,"desc":"Each pool's stakers and stake, in order: a small read for charts. `@ghostkit-chunk pools refsPerItem=1`","events":[],"recommendations":{}}],"arcs":[22,28],"networks":{},"state":{"schema":{"global":{"ints":0,"bytes":0},"local":{"ints":0,"bytes":0}},"keys":{"global":{},"local":{},"box":{}},"maps":{"global":{},"local":{},"box":{}}},"bareActions":{"create":[],"call":["DeleteApplication","UpdateApplication"]},"sourceInfo":{"approval":{"sourceInfo":[{"pc":[388,430,2833,2922,3924,4016,4080,4345],"errorMessage":"Bytes has valid prefix"},{"pc":[185],"errorMessage":"OnCompletion must be NoOp"},{"pc":[337],"errorMessage":"OnCompletion must be one of UpdateApplication, DeleteApplication && can only call when not creating"},{"pc":[2271,2356,2365],"errorMessage":"application exists"},{"pc":[2111,2116,2130,2135],"errorMessage":"asset exists"},{"pc":[918,2788,2876,3139,3264],"errorMessage":"index access is out of bounds"},{"pc":[461,775,846,889,960,1224,1936,2034,2216,2298,2755,2836,3103,3228,3374,3534,4083],"errorMessage":"invalid array length header"},{"pc":[436],"errorMessage":"invalid number of bytes for Constraints"},{"pc":[394],"errorMessage":"invalid number of bytes for MbrAmounts"},{"pc":[4352],"errorMessage":"invalid number of bytes for NodePoolAssignmentConfig"},{"pc":[2928],"errorMessage":"invalid number of bytes for StakedInfo"},{"pc":[3931],"errorMessage":"invalid number of bytes for ValidatorConfig"},{"pc":[4022],"errorMessage":"invalid number of bytes for ValidatorCurState"},{"pc":[4093],"errorMessage":"invalid number of bytes for arc4.dynamic_array<PoolInfo>"},{"pc":[2848],"errorMessage":"invalid number of bytes for arc4.dynamic_array<ValidatorPoolKey>"},{"pc":[2227,2309,3545],"errorMessage":"invalid number of bytes for arc4.dynamic_array<application>"},{"pc":[2767,3115],"errorMessage":"invalid number of bytes for arc4.dynamic_array<arc4.static_array<arc4.uint8, 32>>"},{"pc":[2045],"errorMessage":"invalid number of bytes for arc4.dynamic_array<asset>"},{"pc":[3240],"errorMessage":"invalid number of bytes for arc4.dynamic_array<smart_contracts/reti_reader/contract.algo.ts::AccountAsset>"},{"pc":[472,786,857,971,1235,1947,3385],"errorMessage":"invalid number of bytes for arc4.dynamic_array<uint64>"},{"pc":[351,453,767,838,952,1216,1809,1866,1875,2747,3366,3495],"errorMessage":"invalid number of bytes for arc4.uint64"},{"pc":[2122],"errorMessage":"overflow"}],"pcOffsetMethod":"none"},"clear":{"sourceInfo":[],"pcOffsetMethod":"none"}},"byteCode":{"approval":"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","clear":"C4EBQw=="},"events":[],"templateVariables":{}} as unknown as Arc56Contract
 
 /**
  * A state record containing binary data
@@ -1028,7 +1028,7 @@ export abstract class RetiReaderParamsFactory {
   /**
    * Constructs a no op call for the getValidatorConfig(uint64,uint64[])(uint64,address,address,uint64,uint8,address,uint64[4],uint64,uint64,uint64,uint32,uint32,address,uint64,uint64,uint8,uint64,uint64) ABI method
    *
-   * Each validator's config, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+   * Each validator's config, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
    *
    * @param params Parameters for the call
    * @returns An `AppClientMethodCallParams` object for the call
@@ -1043,7 +1043,7 @@ export abstract class RetiReaderParamsFactory {
   /**
    * Constructs a no op call for the getValidatorStates(uint64,uint64[])(uint16,uint64,uint64,uint64) ABI method
    *
-   * Each validator's current state, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+   * Each validator's current state, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
    *
    * @param params Parameters for the call
    * @returns An `AppClientMethodCallParams` object for the call
@@ -1058,7 +1058,7 @@ export abstract class RetiReaderParamsFactory {
   /**
    * Constructs a no op call for the getPools(uint64,uint64[])(uint64,(uint64,uint16,uint64)) ABI method
    *
-   * Each validator's pools: one entry per pool, tagged with its validator id. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+   * Each validator's pools: one entry per pool, tagged with its validator id. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
    *
    * @param params Parameters for the call
    * @returns An `AppClientMethodCallParams` object for the call
@@ -1073,7 +1073,7 @@ export abstract class RetiReaderParamsFactory {
   /**
    * Constructs a no op call for the getNodePoolAssignments(uint64,uint64[])((uint64[3])[8]) ABI method
    *
-   * Each validator's node to pool assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+   * Each validator's node to pool assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
    *
    * @param params Parameters for the call
    * @returns An `AppClientMethodCallParams` object for the call
@@ -1258,7 +1258,7 @@ export abstract class RetiReaderParamsFactory {
   /**
    * Constructs a no op call for the getValidatorTotals(uint64,uint64[])(uint64,uint64,uint64,uint64) ABI method
    *
-   * Each validator's pool count, stakers and stake, in order: a small read for charts. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+   * Each validator's pool count, stakers and stake, in order: a small read for charts. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
    *
    * @param params Parameters for the call
    * @returns An `AppClientMethodCallParams` object for the call
@@ -1401,7 +1401,7 @@ class RetiReaderFactory {
       /**
        * Creates a new instance of the RetiReader smart contract using the getValidatorConfig(uint64,uint64[])(uint64,address,address,uint64,uint8,address,uint64[4],uint64,uint64,uint64,uint32,uint32,address,uint64,uint64,uint8,uint64,uint64) ABI method.
        *
-       * Each validator's config, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+       * Each validator's config, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
        *
        * @param params The params for the smart contract call
        * @returns The create params
@@ -1412,7 +1412,7 @@ class RetiReaderFactory {
       /**
        * Creates a new instance of the RetiReader smart contract using the getValidatorStates(uint64,uint64[])(uint16,uint64,uint64,uint64) ABI method.
        *
-       * Each validator's current state, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+       * Each validator's current state, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
        *
        * @param params The params for the smart contract call
        * @returns The create params
@@ -1423,7 +1423,7 @@ class RetiReaderFactory {
       /**
        * Creates a new instance of the RetiReader smart contract using the getPools(uint64,uint64[])(uint64,(uint64,uint16,uint64)) ABI method.
        *
-       * Each validator's pools: one entry per pool, tagged with its validator id. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+       * Each validator's pools: one entry per pool, tagged with its validator id. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
        *
        * @param params The params for the smart contract call
        * @returns The create params
@@ -1434,7 +1434,7 @@ class RetiReaderFactory {
       /**
        * Creates a new instance of the RetiReader smart contract using the getNodePoolAssignments(uint64,uint64[])((uint64[3])[8]) ABI method.
        *
-       * Each validator's node to pool assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+       * Each validator's node to pool assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
        *
        * @param params The params for the smart contract call
        * @returns The create params
@@ -1571,7 +1571,7 @@ class RetiReaderFactory {
       /**
        * Creates a new instance of the RetiReader smart contract using the getValidatorTotals(uint64,uint64[])(uint64,uint64,uint64,uint64) ABI method.
        *
-       * Each validator's pool count, stakers and stake, in order: a small read for charts. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+       * Each validator's pool count, stakers and stake, in order: a small read for charts. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
        *
        * @param params The params for the smart contract call
        * @returns The create params
@@ -1657,7 +1657,7 @@ class RetiReaderFactory {
       /**
        * Creates a new instance of the RetiReader smart contract using the getValidatorConfig(uint64,uint64[])(uint64,address,address,uint64,uint8,address,uint64[4],uint64,uint64,uint64,uint32,uint32,address,uint64,uint64,uint8,uint64,uint64) ABI method.
        *
-       * Each validator's config, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+       * Each validator's config, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
        *
        * @param params The params for the smart contract call
        * @returns The create transaction
@@ -1668,7 +1668,7 @@ class RetiReaderFactory {
       /**
        * Creates a new instance of the RetiReader smart contract using the getValidatorStates(uint64,uint64[])(uint16,uint64,uint64,uint64) ABI method.
        *
-       * Each validator's current state, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+       * Each validator's current state, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
        *
        * @param params The params for the smart contract call
        * @returns The create transaction
@@ -1679,7 +1679,7 @@ class RetiReaderFactory {
       /**
        * Creates a new instance of the RetiReader smart contract using the getPools(uint64,uint64[])(uint64,(uint64,uint16,uint64)) ABI method.
        *
-       * Each validator's pools: one entry per pool, tagged with its validator id. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+       * Each validator's pools: one entry per pool, tagged with its validator id. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
        *
        * @param params The params for the smart contract call
        * @returns The create transaction
@@ -1690,7 +1690,7 @@ class RetiReaderFactory {
       /**
        * Creates a new instance of the RetiReader smart contract using the getNodePoolAssignments(uint64,uint64[])((uint64[3])[8]) ABI method.
        *
-       * Each validator's node to pool assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+       * Each validator's node to pool assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
        *
        * @param params The params for the smart contract call
        * @returns The create transaction
@@ -1827,7 +1827,7 @@ class RetiReaderFactory {
       /**
        * Creates a new instance of the RetiReader smart contract using the getValidatorTotals(uint64,uint64[])(uint64,uint64,uint64,uint64) ABI method.
        *
-       * Each validator's pool count, stakers and stake, in order: a small read for charts. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+       * Each validator's pool count, stakers and stake, in order: a small read for charts. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
        *
        * @param params The params for the smart contract call
        * @returns The create transaction
@@ -1884,7 +1884,7 @@ class RetiReaderFactory {
       /**
        * Creates a new instance of the RetiReader smart contract using an ABI method call using the getValidatorConfig(uint64,uint64[])(uint64,address,address,uint64,uint8,address,uint64[4],uint64,uint64,uint64,uint32,uint32,address,uint64,uint64,uint8,uint64,uint64) ABI method.
        *
-       * Each validator's config, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+       * Each validator's config, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
        *
        * @param params The params for the smart contract call
        * @returns The create result
@@ -1896,7 +1896,7 @@ class RetiReaderFactory {
       /**
        * Creates a new instance of the RetiReader smart contract using an ABI method call using the getValidatorStates(uint64,uint64[])(uint16,uint64,uint64,uint64) ABI method.
        *
-       * Each validator's current state, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+       * Each validator's current state, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
        *
        * @param params The params for the smart contract call
        * @returns The create result
@@ -1908,7 +1908,7 @@ class RetiReaderFactory {
       /**
        * Creates a new instance of the RetiReader smart contract using an ABI method call using the getPools(uint64,uint64[])(uint64,(uint64,uint16,uint64)) ABI method.
        *
-       * Each validator's pools: one entry per pool, tagged with its validator id. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+       * Each validator's pools: one entry per pool, tagged with its validator id. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
        *
        * @param params The params for the smart contract call
        * @returns The create result
@@ -1920,7 +1920,7 @@ class RetiReaderFactory {
       /**
        * Creates a new instance of the RetiReader smart contract using an ABI method call using the getNodePoolAssignments(uint64,uint64[])((uint64[3])[8]) ABI method.
        *
-       * Each validator's node to pool assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+       * Each validator's node to pool assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
        *
        * @param params The params for the smart contract call
        * @returns The create result
@@ -2069,7 +2069,7 @@ class RetiReaderFactory {
       /**
        * Creates a new instance of the RetiReader smart contract using an ABI method call using the getValidatorTotals(uint64,uint64[])(uint64,uint64,uint64,uint64) ABI method.
        *
-       * Each validator's pool count, stakers and stake, in order: a small read for charts. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+       * Each validator's pool count, stakers and stake, in order: a small read for charts. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
        *
        * @param params The params for the smart contract call
        * @returns The create result
@@ -2253,7 +2253,7 @@ class RetiReaderClient {
      * 
      * This method is a readonly method; calling it with onComplete of NoOp will result in a simulated transaction rather than a real transaction.
      *
-     * Each validator's config, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+     * Each validator's config, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
      *
      * @param params The params for the smart contract call
      * @returns The call params
@@ -2267,7 +2267,7 @@ class RetiReaderClient {
      * 
      * This method is a readonly method; calling it with onComplete of NoOp will result in a simulated transaction rather than a real transaction.
      *
-     * Each validator's current state, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+     * Each validator's current state, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
      *
      * @param params The params for the smart contract call
      * @returns The call params
@@ -2281,7 +2281,7 @@ class RetiReaderClient {
      * 
      * This method is a readonly method; calling it with onComplete of NoOp will result in a simulated transaction rather than a real transaction.
      *
-     * Each validator's pools: one entry per pool, tagged with its validator id. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+     * Each validator's pools: one entry per pool, tagged with its validator id. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
      *
      * @param params The params for the smart contract call
      * @returns The call params
@@ -2295,7 +2295,7 @@ class RetiReaderClient {
      * 
      * This method is a readonly method; calling it with onComplete of NoOp will result in a simulated transaction rather than a real transaction.
      *
-     * Each validator's node to pool assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+     * Each validator's node to pool assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
      *
      * @param params The params for the smart contract call
      * @returns The call params
@@ -2468,7 +2468,7 @@ class RetiReaderClient {
      * 
      * This method is a readonly method; calling it with onComplete of NoOp will result in a simulated transaction rather than a real transaction.
      *
-     * Each validator's pool count, stakers and stake, in order: a small read for charts. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+     * Each validator's pool count, stakers and stake, in order: a small read for charts. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
      *
      * @param params The params for the smart contract call
      * @returns The call params
@@ -2570,7 +2570,7 @@ class RetiReaderClient {
      * 
      * This method is a readonly method; calling it with onComplete of NoOp will result in a simulated transaction rather than a real transaction.
      *
-     * Each validator's config, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+     * Each validator's config, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
      *
      * @param params The params for the smart contract call
      * @returns The call transaction
@@ -2584,7 +2584,7 @@ class RetiReaderClient {
      * 
      * This method is a readonly method; calling it with onComplete of NoOp will result in a simulated transaction rather than a real transaction.
      *
-     * Each validator's current state, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+     * Each validator's current state, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
      *
      * @param params The params for the smart contract call
      * @returns The call transaction
@@ -2598,7 +2598,7 @@ class RetiReaderClient {
      * 
      * This method is a readonly method; calling it with onComplete of NoOp will result in a simulated transaction rather than a real transaction.
      *
-     * Each validator's pools: one entry per pool, tagged with its validator id. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+     * Each validator's pools: one entry per pool, tagged with its validator id. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
      *
      * @param params The params for the smart contract call
      * @returns The call transaction
@@ -2612,7 +2612,7 @@ class RetiReaderClient {
      * 
      * This method is a readonly method; calling it with onComplete of NoOp will result in a simulated transaction rather than a real transaction.
      *
-     * Each validator's node to pool assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+     * Each validator's node to pool assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
      *
      * @param params The params for the smart contract call
      * @returns The call transaction
@@ -2785,7 +2785,7 @@ class RetiReaderClient {
      * 
      * This method is a readonly method; calling it with onComplete of NoOp will result in a simulated transaction rather than a real transaction.
      *
-     * Each validator's pool count, stakers and stake, in order: a small read for charts. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+     * Each validator's pool count, stakers and stake, in order: a small read for charts. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
      *
      * @param params The params for the smart contract call
      * @returns The call transaction
@@ -2888,7 +2888,7 @@ class RetiReaderClient {
      * 
      * This method is a readonly method; calling it with onComplete of NoOp will result in a simulated transaction rather than a real transaction.
      *
-     * Each validator's config, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+     * Each validator's config, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
      *
      * @param params The params for the smart contract call
      * @returns The call result
@@ -2903,7 +2903,7 @@ class RetiReaderClient {
      * 
      * This method is a readonly method; calling it with onComplete of NoOp will result in a simulated transaction rather than a real transaction.
      *
-     * Each validator's current state, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+     * Each validator's current state, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
      *
      * @param params The params for the smart contract call
      * @returns The call result
@@ -2918,7 +2918,7 @@ class RetiReaderClient {
      * 
      * This method is a readonly method; calling it with onComplete of NoOp will result in a simulated transaction rather than a real transaction.
      *
-     * Each validator's pools: one entry per pool, tagged with its validator id. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+     * Each validator's pools: one entry per pool, tagged with its validator id. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
      *
      * @param params The params for the smart contract call
      * @returns The call result
@@ -2933,7 +2933,7 @@ class RetiReaderClient {
      * 
      * This method is a readonly method; calling it with onComplete of NoOp will result in a simulated transaction rather than a real transaction.
      *
-     * Each validator's node to pool assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+     * Each validator's node to pool assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
      *
      * @param params The params for the smart contract call
      * @returns The call result
@@ -3118,7 +3118,7 @@ class RetiReaderClient {
      * 
      * This method is a readonly method; calling it with onComplete of NoOp will result in a simulated transaction rather than a real transaction.
      *
-     * Each validator's pool count, stakers and stake, in order: a small read for charts. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+     * Each validator's pool count, stakers and stake, in order: a small read for charts. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
      *
      * @param params The params for the smart contract call
      * @returns The call result
@@ -3190,7 +3190,7 @@ class RetiReaderClient {
    * 
    * This method is a readonly method; calling it with onComplete of NoOp will result in a simulated transaction rather than a real transaction.
    *
-   * Each validator's config, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+   * Each validator's config, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
    *
    * @param params The params for the smart contract call
    * @returns The call result
@@ -3205,7 +3205,7 @@ class RetiReaderClient {
    * 
    * This method is a readonly method; calling it with onComplete of NoOp will result in a simulated transaction rather than a real transaction.
    *
-   * Each validator's current state, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+   * Each validator's current state, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
    *
    * @param params The params for the smart contract call
    * @returns The call result
@@ -3220,7 +3220,7 @@ class RetiReaderClient {
    * 
    * This method is a readonly method; calling it with onComplete of NoOp will result in a simulated transaction rather than a real transaction.
    *
-   * Each validator's pools: one entry per pool, tagged with its validator id. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+   * Each validator's pools: one entry per pool, tagged with its validator id. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
    *
    * @param params The params for the smart contract call
    * @returns The call result
@@ -3235,7 +3235,7 @@ class RetiReaderClient {
    * 
    * This method is a readonly method; calling it with onComplete of NoOp will result in a simulated transaction rather than a real transaction.
    *
-   * Each validator's node to pool assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+   * Each validator's node to pool assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
    *
    * @param params The params for the smart contract call
    * @returns The call result
@@ -3420,7 +3420,7 @@ class RetiReaderClient {
    * 
    * This method is a readonly method; calling it with onComplete of NoOp will result in a simulated transaction rather than a real transaction.
    *
-   * Each validator's pool count, stakers and stake, in order: a small read for charts. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+   * Each validator's pool count, stakers and stake, in order: a small read for charts. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
    *
    * @param params The params for the smart contract call
    * @returns The call result
@@ -3689,7 +3689,7 @@ export type RetiReaderComposer<TReturns extends [...any[]] = []> = {
   /**
    * Calls the getValidatorConfig(uint64,uint64[])(uint64,address,address,uint64,uint8,address,uint64[4],uint64,uint64,uint64,uint32,uint32,address,uint64,uint64,uint8,uint64,uint64) ABI method.
    *
-   * Each validator's config, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+   * Each validator's config, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
    *
    * @param args The arguments for the contract call
    * @param params Any additional parameters for the call
@@ -3700,7 +3700,7 @@ export type RetiReaderComposer<TReturns extends [...any[]] = []> = {
   /**
    * Calls the getValidatorStates(uint64,uint64[])(uint16,uint64,uint64,uint64) ABI method.
    *
-   * Each validator's current state, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+   * Each validator's current state, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
    *
    * @param args The arguments for the contract call
    * @param params Any additional parameters for the call
@@ -3711,7 +3711,7 @@ export type RetiReaderComposer<TReturns extends [...any[]] = []> = {
   /**
    * Calls the getPools(uint64,uint64[])(uint64,(uint64,uint16,uint64)) ABI method.
    *
-   * Each validator's pools: one entry per pool, tagged with its validator id. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+   * Each validator's pools: one entry per pool, tagged with its validator id. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
    *
    * @param args The arguments for the contract call
    * @param params Any additional parameters for the call
@@ -3722,7 +3722,7 @@ export type RetiReaderComposer<TReturns extends [...any[]] = []> = {
   /**
    * Calls the getNodePoolAssignments(uint64,uint64[])((uint64[3])[8]) ABI method.
    *
-   * Each validator's node to pool assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+   * Each validator's node to pool assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
    *
    * @param args The arguments for the contract call
    * @param params Any additional parameters for the call
@@ -3859,7 +3859,7 @@ export type RetiReaderComposer<TReturns extends [...any[]] = []> = {
   /**
    * Calls the getValidatorTotals(uint64,uint64[])(uint64,uint64,uint64,uint64) ABI method.
    *
-   * Each validator's pool count, stakers and stake, in order: a small read for charts. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+   * Each validator's pool count, stakers and stake, in order: a small read for charts. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
    *
    * @param args The arguments for the contract call
    * @param params Any additional parameters for the call
@@ -5662,7 +5662,7 @@ export class RetiReaderSDK extends GhostkitBase<RetiReaderFactory, RetiReaderCli
     input: GhostkitMethodInput<Methods['getValidatorConfig']['argsObj']>,
   ): Promise<Methods['getValidatorConfig']['returns'][]> {
     return this._gkCall(
-      { signature: 'getValidatorConfig(uint64,uint64[])(uint64,address,address,uint64,uint8,address,uint64[4],uint64,uint64,uint64,uint32,uint32,address,uint64,uint64,uint8,uint64,uint64)', chunk: {"arg":"validatorIds","refsPerItem":1,"maxPerGroup":256} },
+      { signature: 'getValidatorConfig(uint64,uint64[])(uint64,address,address,uint64,uint8,address,uint64[4],uint64,uint64,uint64,uint32,uint32,address,uint64,uint64,uint8,uint64,uint64)', chunk: {"arg":"validatorIds","refsPerItem":1,"maxPerGroup":127} },
       input,
       (params: CallParams<RetiReaderArgs['obj']['getValidatorConfig(uint64,uint64[])(uint64,address,address,uint64,uint8,address,uint64[4],uint64,uint64,uint64,uint32,uint32,address,uint64,uint64,uint8,uint64,uint64)']>) => this.client.params.getValidatorConfig(params),
     )
@@ -5675,7 +5675,7 @@ export class RetiReaderSDK extends GhostkitBase<RetiReaderFactory, RetiReaderCli
     input: GhostkitMethodInput<Methods['getValidatorStates']['argsObj']>,
   ): Promise<Methods['getValidatorStates']['returns'][]> {
     return this._gkCall(
-      { signature: 'getValidatorStates(uint64,uint64[])(uint16,uint64,uint64,uint64)', chunk: {"arg":"validatorIds","refsPerItem":1,"maxPerGroup":256} },
+      { signature: 'getValidatorStates(uint64,uint64[])(uint16,uint64,uint64,uint64)', chunk: {"arg":"validatorIds","refsPerItem":1,"maxPerGroup":127} },
       input,
       (params: CallParams<RetiReaderArgs['obj']['getValidatorStates(uint64,uint64[])(uint16,uint64,uint64,uint64)']>) => this.client.params.getValidatorStates(params),
     )
@@ -5688,7 +5688,7 @@ export class RetiReaderSDK extends GhostkitBase<RetiReaderFactory, RetiReaderCli
     input: GhostkitMethodInput<Methods['getPools']['argsObj']>,
   ): Promise<Methods['getPools']['returns'][]> {
     return this._gkCall(
-      { signature: 'getPools(uint64,uint64[])(uint64,(uint64,uint16,uint64))', chunk: {"arg":"validatorIds","refsPerItem":1,"maxPerGroup":256} },
+      { signature: 'getPools(uint64,uint64[])(uint64,(uint64,uint16,uint64))', chunk: {"arg":"validatorIds","refsPerItem":1,"maxPerGroup":127} },
       input,
       (params: CallParams<RetiReaderArgs['obj']['getPools(uint64,uint64[])(uint64,(uint64,uint16,uint64))']>) => this.client.params.getPools(params),
     )
@@ -5701,7 +5701,7 @@ export class RetiReaderSDK extends GhostkitBase<RetiReaderFactory, RetiReaderCli
     input: GhostkitMethodInput<Methods['getNodePoolAssignments']['argsObj']>,
   ): Promise<Methods['getNodePoolAssignments']['returns'][]> {
     return this._gkCall(
-      { signature: 'getNodePoolAssignments(uint64,uint64[])((uint64[3])[8])', chunk: {"arg":"validatorIds","refsPerItem":1,"maxPerGroup":256} },
+      { signature: 'getNodePoolAssignments(uint64,uint64[])((uint64[3])[8])', chunk: {"arg":"validatorIds","refsPerItem":1,"maxPerGroup":127} },
       input,
       (params: CallParams<RetiReaderArgs['obj']['getNodePoolAssignments(uint64,uint64[])((uint64[3])[8])']>) => this.client.params.getNodePoolAssignments(params),
     )
@@ -5860,7 +5860,7 @@ export class RetiReaderSDK extends GhostkitBase<RetiReaderFactory, RetiReaderCli
     input: GhostkitMethodInput<Methods['getValidatorTotals']['argsObj']>,
   ): Promise<Methods['getValidatorTotals']['returns'][]> {
     return this._gkCall(
-      { signature: 'getValidatorTotals(uint64,uint64[])(uint64,uint64,uint64,uint64)', chunk: {"arg":"validatorIds","refsPerItem":1,"maxPerGroup":256} },
+      { signature: 'getValidatorTotals(uint64,uint64[])(uint64,uint64,uint64,uint64)', chunk: {"arg":"validatorIds","refsPerItem":1,"maxPerGroup":127} },
       input,
       (params: CallParams<RetiReaderArgs['obj']['getValidatorTotals(uint64,uint64[])(uint64,uint64,uint64,uint64)']>) => this.client.params.getValidatorTotals(params),
     )

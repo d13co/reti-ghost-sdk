@@ -151,8 +151,9 @@ export class RetiReader extends Contract {
     };
   }
 
+  // stock: 16×8 refs per group, one taken by the registry app
   /**
-   * Each validator's config, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+   * Each validator's config, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
    */
   @abimethod({ readonly: true, onCreate: "allow" })
   getValidatorConfig(registryAppId: uint64, validatorIds: uint64[]): ValidatorConfig {
@@ -193,8 +194,9 @@ export class RetiReader extends Contract {
     };
   }
 
+  // stock: 16×8 refs per group, one taken by the registry app
   /**
-   * Each validator's current state, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+   * Each validator's current state, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
    */
   @abimethod({ readonly: true, onCreate: "allow" })
   getValidatorStates(registryAppId: uint64, validatorIds: uint64[]): ValidatorCurState {
@@ -221,8 +223,9 @@ export class RetiReader extends Contract {
     };
   }
 
+  // stock: 16×8 refs per group, one taken by the registry app
   /**
-   * Each validator's pools: one entry per pool, tagged with its validator id. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+   * Each validator's pools: one entry per pool, tagged with its validator id. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
    */
   @abimethod({ readonly: true, onCreate: "allow" })
   getPools(registryAppId: uint64, validatorIds: uint64[]): ValidatorPoolInfo {
@@ -259,8 +262,9 @@ export class RetiReader extends Contract {
     };
   }
 
+  // stock: 16×8 refs per group, one taken by the registry app
   /**
-   * Each validator's node to pool assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+   * Each validator's node to pool assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
    */
   @abimethod({ readonly: true, onCreate: "allow" })
   getNodePoolAssignments(registryAppId: uint64, validatorIds: uint64[]): NodePoolAssignmentConfig {
@@ -531,8 +535,9 @@ export class RetiReader extends Contract {
     return { account: new Address(), assetId: 0, optedIn: false, balance: 0 };
   }
 
+  // stock: 16×8 refs per group, one taken by the registry app
   /**
-   * Each validator's pool count, stakers and stake, in order: a small read for charts. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=256`
+   * Each validator's pool count, stakers and stake, in order: a small read for charts. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`
    */
   @abimethod({ readonly: true, onCreate: "allow" })
   getValidatorTotals(registryAppId: uint64, validatorIds: uint64[]): ValidatorTotals {
