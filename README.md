@@ -22,7 +22,7 @@ Doing that needs a fork at every layer under the SDK. None of them is published 
 On top of those, this branch changes the SDK itself:
 
 - **Reader contract** (`projects/contracts/`): new read-only reader methods (registry, validator and pool totals, pool states, staker positions, account balances, asset holdings, round timestamps and a round scan for date lookups), each item one log so reads chunk to the node's limits. Ids not created yet at a round read as zeros instead of failing the simulate.
-- **SDK** (`projects/sdk/`): reads go through read-only queries when the node has them, else simulate; every read takes `{ round }` (or `sdk.atRound(round)`) and an `AbortSignal`; `roundAt` / `timestampOf`; `getChangeRounds` timelines; series reads over many rounds; clear errors for rounds before the registry, past the node's tip, or too old for a stock node.
+- **SDK** (`projects/sdk/`): reads go through read-only queries when the node has them, else simulate; every read takes `{ round }` (or `sdk.atRound(round)`) and an `AbortSignal`; `roundAt` / `timestampOf`; `getChangeRounds` timelines; series reads over many rounds; a staker's deposit and withdrawal history across every pool they were ever in; clear errors for rounds before the registry, past the node's tip, or too old for a stock node.
 
 It still works against any algod for the latest state. With stock algosdk and algokit-utils, or on a stock node, reads at older rounds throw `TimeTravelUnavailableError`.
 

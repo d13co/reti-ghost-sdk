@@ -22,7 +22,22 @@ import { bytesToBigInt, decodeStakersBox, type PoolStaker } from "./decode.js"
 import { abortable, raceAbort, sim, simOptions } from "./abort.js"
 import { FutureRoundError, isDTUnsupported, RetiNotDeployedError, TimeTravelUnavailableError } from "./errors.js"
 import { RoundClock, type RoundAtOptions, type RoundTime } from "./history/dateToRound.js"
-import { getChangeRounds, type TimelineOptions, type TimelinePage, type TimelineTarget } from "./history/timeline.js"
+import { getChangeRounds, stakerPoolSetBoxName, type TimelineOptions, type TimelinePage, type TimelineTarget } from "./history/timeline.js"
+import {
+  eventsFromStates,
+  HISTORY_ROUNDS_PER_WAVE,
+  newestFirst,
+  searchEvents,
+  stakerMemberships,
+  type PoolSearch,
+  type PositionsReader,
+  type RoundTimestamp,
+  type StakerHistory,
+  type StakerHistoryProgress,
+  type StakerPoolMembership,
+  type StakerPoolSetVersion,
+} from "./history/stakerHistory.js"
+import { pMap } from "./utils/p-map.js"
 import { MAX_SERIES_POINTS, seriesRounds, type SeriesPoint, type SeriesRounds } from "./history/series.js"
 
 export type {
@@ -46,7 +61,25 @@ export { FutureRoundError, RetiNotDeployedError, TimeTravelUnavailableError, isD
 export { RoundClock, type RoundAtOptions, type RoundTime } from "./history/dateToRound.js"
 export { MAX_UNBOUNDED_CHANGES, type Change, type TimelineOptions, type TimelinePage, type TimelineTarget } from "./history/timeline.js"
 export { MAX_SERIES_POINTS, seriesRounds, type SeriesPoint, type SeriesRounds } from "./history/series.js"
-export type { PoolStaker } from "./decode.js"
+export { decodeStakerPoolSet, type PoolStaker, type StakerPoolKey } from "./decode.js"
+export {
+  eventsFromStates,
+  HISTORY_ROUNDS_PER_WAVE,
+  searchEvents,
+  STAKING_BLOCK_DELAY,
+  stakerMemberships,
+  type EventsFromStatesOptions,
+  type PoolSearch,
+  type PositionsReader,
+  type RoundTimestamp,
+  type SearchOptions,
+  type StakeEvent,
+  type StakeEventKind,
+  type StakerHistory,
+  type StakerHistoryProgress,
+  type StakerPoolMembership,
+  type StakerPoolSetVersion,
+} from "./history/stakerHistory.js"
 
 /** Per-call read options. */
 export type ReadOptions = {
@@ -104,6 +137,25 @@ export type RegistryTotals = {
   numValidators: number
   numStakers: bigint
   staked: bigint
+}
+
+/** Options for `getStakerHistory`. */
+export type StakerHistoryOptions = {
+  /** Only events at this round or later. Memberships that ended before it are left out. */
+  minRound?: number | bigint
+  /** The history as of this round; defaults to the latest */
+  maxRound?: number | bigint
+  /** Only this validator's pools */
+  validatorId?: number | bigint
+  /** Most rounds read per wave of the search (default 64: 4 query requests on a dtalgorand node) */
+  roundsPerWave?: number
+  /** Aborts the search: its requests are cancelled and it rejects with the signal's reason */
+  signal?: AbortSignal
+  /**
+   * Called as the search goes: once the memberships are known, as their change rounds are listed, and after each wave of
+   * reads, with the history found so far (`partial`), so an app can show it as it fills in.
+   */
+  onProgress?: (progress: StakerHistoryProgress) => void
 }
 
 /** An account and asset, for `getAssetHoldings`. */
@@ -628,6 +680,134 @@ export class RetiGhostSDK {
   }
 
   /**
+   * Every pool a staker was ever in, and when, oldest join first: the versions of the registry's `sps` box for the
+   * staker, which is never deleted (one request per 1,000 changes to it). Needs a dtalgorand node (`/versions`).
+   */
+  async getStakerPools(staker: string, { maxRound, signal }: { maxRound?: number | bigint } & SignalOptions = {}): Promise<StakerPoolMembership[]> {
+    const { versions } = await this.stakerPoolSetVersions(staker, maxRound, signal)
+    return stakerMemberships(versions)
+  }
+
+  /**
+   * Every position of each staker at each round: one request (query or simulate) per `max-rounds` rounds on a
+   * dtalgorand node. Each point carries its round's block timestamp, also cached in `clock`.
+   */
+  async getStakerPositionsSeries(
+    stakers: string[],
+    rounds: SeriesRounds,
+    { maxPoints = MAX_SERIES_POINTS, signal }: { maxPoints?: number } & SignalOptions = {},
+  ): Promise<SeriesPoint<StakerPosition[]>[]> {
+    const list = seriesRounds(rounds, maxPoints)
+    return this.seriesAt(
+      list,
+      (s) => s.getStakerPositions({ methodArgsOrArgsArray: { registryAppId: this.registryAppId, stakers } }),
+      signal,
+    )
+  }
+
+  /**
+   * A staker's deposits and withdrawals across every pool they were ever in, newest first, rebuilt from on-chain state
+   * (no indexer). It lists when the staker joined and left each pool, then when each pool's `stakers` box changed during
+   * the membership, and reads the staker's entry at a few of those rounds, narrowing down in waves to the rounds their
+   * stake changed. The cost depends on how often the pools changed, not on how active the staker was: a daily-payout
+   * pool over two years with 10 events is ~150–285 rounds read in 3–4 waves.
+   *
+   * Limits: each needs two actions by this staker in one block, and isn't handled.
+   * - Several deposits in one round are one event.
+   * - A join and a full exit in one round don't show; a deposit then a full exit shows only the withdrawal of the
+   *   balance before.
+   * - A payout and a full exit in one round understate the withdrawal by that round's reward; such a withdrawal is
+   *   flagged `approximate`.
+   * - A deposit and a withdrawal in one round show as one event of the net amount (`mixed` when they cancel out).
+   * - A removal by the validator's owner or manager looks like a withdrawal. Reward token claims outside a withdrawal
+   *   don't show.
+   *
+   * Throws `TimeTravelUnavailableError` on a node without time travel.
+   */
+  async getStakerHistory(
+    staker: string,
+    { minRound, maxRound, validatorId, roundsPerWave = HISTORY_ROUNDS_PER_WAVE, signal, onProgress }: StakerHistoryOptions = {},
+  ): Promise<StakerHistory> {
+    await this.requireTimeTravel(signal)
+    const { versions, round } = await this.stakerPoolSetVersions(staker, maxRound, signal)
+    const min = minRound === undefined ? undefined : BigInt(minRound)
+    const validator = validatorId === undefined ? undefined : BigInt(validatorId)
+    const pools = stakerMemberships(versions).filter(
+      (m) => (validator === undefined || m.validatorId === validator) && (min === undefined || m.leaveRound === undefined || m.leaveRound >= min),
+    )
+    const clipped = pools.map((m) => min !== undefined && m.joinRound < min)
+    const approximate = new Map<number, boolean>()
+    let searches: PoolSearch[] = []
+    const progress = { pools: pools.length, poolsListed: 0, poolsDone: 0, waves: 0, reads: 0 }
+
+    const history = (): StakerHistory => ({
+      events: newestFirst(
+        searches.map((search, k) => eventsFromStates(pools[k], search, { clipped: clipped[k], approximateLeave: approximate.get(k) })),
+      ),
+      pools,
+      round,
+    })
+    const report = () => onProgress?.({ ...progress, partial: history() })
+    report()
+
+    // whether each leave may be understated: the pool paid a reward in that round. Pools leaving in one round are read
+    // together; this runs alongside the search.
+    const byLeave = new Map<bigint, number[]>()
+    pools.forEach((m, k) => {
+      if (m.leaveRound === undefined) return
+      byLeave.set(m.leaveRound, [...(byLeave.get(m.leaveRound) ?? []), k])
+    })
+    const leaves = pMap(
+      [...byLeave],
+      async ([leave, ks]) => {
+        const payouts = await this.getPoolBalancesAndLastPayouts(
+          ks.map((k) => pools[k].poolAppId),
+          { round: leave, signal },
+        )
+        ks.forEach((k, n) => approximate.set(k, payouts[n].lastPayout === leave))
+      },
+      { concurrency: 4 },
+    )
+    // it's awaited below; until then a failure mustn't go unhandled
+    leaves.catch(() => {})
+
+    const rounds = await pMap(
+      pools,
+      async (m, k) => {
+        const list = await this.membershipRounds(m, clipped[k] ? min : undefined, round, signal)
+        progress.poolsListed += 1
+        report()
+        return list
+      },
+      { concurrency: 8 },
+    )
+
+    const read: PositionsReader = async (list) => {
+      const chunks: bigint[][] = []
+      for (let at = 0; at < list.length; at += MAX_SERIES_POINTS) chunks.push(list.slice(at, at + MAX_SERIES_POINTS))
+      const points = await Promise.all(chunks.map((chunk) => this.getStakerPositionsSeries([staker], chunk, { signal })))
+      return points.flat()
+    }
+    searches = await searchEvents(
+      pools.map((m, k) => ({ poolAppId: m.poolAppId, rounds: rounds[k] })),
+      read,
+      {
+        roundsPerWave,
+        signal,
+        onWave: (current, wave) => {
+          searches = current
+          progress.waves = wave.waves
+          progress.reads = wave.reads
+          progress.poolsDone = current.filter((s) => s.done).length
+          report()
+        },
+      },
+    )
+    await raceAbort(leaves, signal)
+    return history()
+  }
+
+  /**
    * Each validator's totals at each round: one request (query or simulate) per `max-rounds` rounds on a dtalgorand
    * node. Each point carries its round's block timestamp, also cached in `clock`. See `seriesAt` for rounds that fail.
    */
@@ -725,6 +905,70 @@ export class RetiGhostSDK {
       if (p.at !== undefined) this.clock.remember(p.at, timestamp)
       return { round: p.round, ok: true, value, timestamp }
     })
+  }
+
+  /** Throws `TimeTravelUnavailableError` unless the node and the loaded libraries can read past rounds. */
+  private async requireTimeTravel(signal?: AbortSignal): Promise<void> {
+    const node = await raceAbort(this.getNode(), signal)
+    if (node.kind === "dt" && node.limits.timeTravel) return
+    const [last, creation] = await raceAbort(Promise.all([this.latestRound(0n, STATUS_MAX_AGE_MS), this.getRegistryCreationRound()]), signal)
+    throw new TimeTravelUnavailableError(creation ?? 1n, last, node.kind === "stock" ? node.reason : "time travel is off")
+  }
+
+  /**
+   * Every version of a staker's `sps` box up to `maxRound` (the latest when undefined), with values, oldest first, and
+   * the round the listing is as of. The round is fixed before the first page, so every page lists the same range.
+   */
+  private async stakerPoolSetVersions(
+    staker: string,
+    maxRound: number | bigint | undefined,
+    signal?: AbortSignal,
+  ): Promise<{ versions: StakerPoolSetVersion[]; round: bigint }> {
+    const round = maxRound !== undefined ? BigInt(maxRound) : await raceAbort(this.latestRound(0n, STATUS_MAX_AGE_MS), signal)
+    const name = stakerPoolSetBoxName(staker)
+    const versions: StakerPoolSetVersion[] = []
+    let next: string | undefined
+    do {
+      const page = await this.algorand.dt.getBoxVersions(this.registryAppId, name, {
+        includeValues: true,
+        order: "asc",
+        limit: 1_000,
+        maxRound: round,
+        ...(next ? { next } : {}),
+        ...(signal ? { signal } : {}),
+      })
+      for (const { round, timestamp, deleted, value } of page.versions) versions.push({ round, timestamp, deleted, ...(value ? { value } : {}) })
+      next = page.nextToken
+    } while (next)
+    return { versions, round }
+  }
+
+  /**
+   * The rounds a pool's `stakers` box changed during a membership, up to `round`: from the join or, when the history
+   * starts later (`from`), from the round before `from`, whose timestamp is filled in when it's read.
+   */
+  private async membershipRounds(
+    m: StakerPoolMembership,
+    from: bigint | undefined,
+    round: bigint,
+    signal?: AbortSignal,
+  ): Promise<RoundTimestamp[]> {
+    const first = from ?? m.joinRound
+    const last = (m.leaveRound ?? round + 1n) - 1n
+    const rounds: RoundTimestamp[] = from !== undefined ? [{ round: from - 1n, timestamp: 0 }] : []
+    let next: string | undefined
+    while (first <= last) {
+      const page = await this.getChangeRounds(
+        { poolStakers: m.poolAppId },
+        { minRound: first, maxRound: last, order: "asc", limit: 10_000, ...(next ? { next } : {}), ...(signal ? { signal } : {}) },
+      )
+      for (const { round, timestamp } of page.changes) rounds.push({ round, timestamp })
+      next = page.next
+      if (!next) break
+    }
+    // the join changes the box; keep the search's first round the join even if the listing disagrees
+    if (from === undefined && rounds[0]?.round !== m.joinRound) rounds.unshift({ round: m.joinRound, timestamp: m.joinTimestamp })
+    return rounds
   }
 
   /** The round a read is at (the call's, else the SDK's; undefined for the latest state). Throws if it can't be read. */

@@ -121,6 +121,7 @@ All methods are read-only, take an optional trailing `{ round }`, and return res
 ### Stakers and accounts
 
 - `getStakerPositions(stakers)`: every pool each staker is in, with their `StakedInfo` (balance, total rewarded, reward token balance, entry round).
+- `getStakerPools(staker)` and `getStakerHistory(staker)`: every pool a staker was ever in, and their deposits and withdrawals; see [Staker history](#staker-history).
 - `getAccountBalances(accounts)`: `{ account, balance, minBalance }`.
 - `getAssetHoldings([{ account, assetId }])`: `{ account, assetId, optedIn, balance }`.
 
@@ -167,6 +168,7 @@ For charts, one request runs a small read at many rounds, up to the node's `max-
 - `getValidatorTotalsSeries(validatorIds, rounds)`
 - `getPoolTotalsSeries(poolAppIds, rounds)`
 - `getRegistryTotalsSeries(rounds)`
+- `getStakerPositionsSeries(stakers, rounds)`
 
 `rounds` is a list, or `{ from, to, points }` spread evenly; points come back deduplicated and in round order. Each point is `{ round, ok: true, value, timestamp }` or `{ round, ok: false, error }`, where `timestamp` is the round's block timestamp in seconds, read in the same request and cached in `sdk.clock`. A round that can't be read is an `ok: false` point with the error a single read would throw (`RetiNotDeployedError`, `FutureRoundError`, `TimeTravelUnavailableError`); the other rounds still read. Without time travel, the rounds near the latest share one read of the latest state. At most 256 points by default (`maxPoints` to change).
 
@@ -180,6 +182,30 @@ Measured from Node.js on a local MainNet node, all from registry creation to now
 | registry totals × 105 rounds | 31–37 ms, 0.1 MB | 120–265 ms, 1.1 MB |
 
 On simulate, most of the validator series' response is the simulate's record of its inner calls, so in a browser keep validator series to about 64–128 points there, or chart the registry totals. Queries return no such record: a validator series of 256 points is ~2 MB.
+
+
+### Staker history
+
+`sdk.getStakerHistory(staker, { minRound?, maxRound?, validatorId?, onProgress?, signal? })` returns a staker's deposits and withdrawals across every pool they were ever in, including validators they have since fully left, newest first. It rebuilds them from on-chain state, with no indexer:
+
+1. **Memberships.** The registry's `sps` box for the staker (the pools they are in) is never deleted, so its versions with values give every pool they joined and left, and when. `sdk.getStakerPools(staker)` returns just these: one request, enough to list the validators used.
+2. **Change rounds.** For each membership, the rounds at which the pool's `stakers` box changed (rounds only, one request per 10,000).
+3. **Search.** Within a membership, with `p = balance − totalRewarded`: deposits always raise `entryRound`, epoch payouts raise `balance` and `totalRewarded` alike, and withdrawals lower `balance`. So if (`p`, `entryRound`) is the same at two of those rounds, the staker made no deposit or withdrawal between them. The search reads the staker's entry at both ends of each membership, then splits the spans whose ends differ, in waves of up to 64 rounds (`roundsPerWave`) shared by every pool, until each change is pinned to one round. `entryRound − 320` names the last deposit, which shortcuts the split. No round is read twice, and a round that fails twice throws rather than being taken as the staker being absent.
+
+Each event is `{ round, timestamp, validatorId, poolId, poolAppId, kind, amount, balanceAfter }`, with `kind` `deposit`, `withdrawal` or `mixed`, and optionally `joined`, `left`, `rewardTokenPaid` and `approximate`. The cost depends on how often the pools changed, not on how active the staker was: for a pool with n box changes and k events, about k·15·log₁₆(n/k) rounds in ⌈log₁₆ n⌉+1 waves, never more than n. A daily-payout pool over two years (n ≈ 3,000) with 10 events is ~150–285 rounds in 3–4 waves.
+
+`onProgress` is called once the memberships are known, as each one's change rounds are listed, and after each wave, with `{ pools, poolsListed, poolsDone, waves, reads, partial }`: `partial` is the history so far (every membership, and the events found so far; final for the pools done), so an app can show it as it fills in.
+
+Limits, each needing two actions by the staker in one block (documented, not handled):
+
+- Several deposits in one round are one event; a deposit and a withdrawal in one round are one event of the net amount (`mixed` when they cancel out).
+- A join and a full exit in one round don't show; a deposit then a full exit shows only the withdrawal of the balance before.
+- A payout and a full exit in one round understate the withdrawal by that round's reward; such a withdrawal is flagged `approximate` (the pool's `lastPayout` is the leave round).
+- A removal by the validator's owner or manager (e.g. a gating eviction) looks like a withdrawal. Reward token claims outside a withdrawal don't show.
+
+It needs a dtalgorand node with time travel, and throws `TimeTravelUnavailableError` without one. Measured on a local MainNet node with queries: a staker with 2 memberships over 20 months, 5 events, in 70 rounds read over 2 waves, ~2 s.
+
+The building blocks are exported for apps that read differently: `stakerMemberships(versions)`, `searchEvents(pools, read)` and `eventsFromStates(membership, search)`.
 
 
 ## Ghost vs Deployed Reader
@@ -208,10 +234,12 @@ Ghost Mainnet App ID: 3374692547 **currently updatable by author.** It runs the 
 
 ## Development
 
+- Tests: `pnpm test` (vitest, `test/`): the staker history search against a simulated pool ledger.
 - Build: `algokit project run build` at the repo root, or `pnpm --filter smart_contracts build && pnpm --filter reti-ghost-sdk build`. The SDK build copies the generated reader client from the contracts project into `src/generated/`.
 - Examples (`examples/`, run with `npx tsx`; point `DT_ALGOD_SERVER` at a dtalgorand MainNet node, and set `DT_ALGOD_TOKEN` if it needs one):
   - `at-round.ts [round|latest]`: everything the UI reads, at a round
   - `date-to-round.ts [date]`, `timeline.ts [validatorId]`, `series.ts [points]`
+  - `staker-history.ts <address> [validatorId]`: a staker's pools and deposits and withdrawals, with the search's progress
   - `abort.ts`: aborting reads (series, pinned reads, `roundAt` between probes, shared header reads, the stock backend). Last run: all 13 pass, on a local MainNet node with queries and on one without.
   - `verify.ts [points]`: cross-checks the SDK's reads with REST reads at the same rounds (validator boxes byte for byte, pool global state and balances, staker positions and balances) over the registry's life. Last run: 255 rounds through queries, 32 through the extended simulate, all match.
   - `query-vs-simulate.ts [points]`: the same reads through queries and through the extended simulate, every value compared, with timings and the requests each sent; on a node without queries, checks that reads fall back to simulate. Last run: all 74 checks pass with queries, 73 on the fallback.

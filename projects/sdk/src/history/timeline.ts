@@ -90,7 +90,7 @@ export async function getChangeRounds(
 }
 
 /** The registry's box of the pools a staker is in: `sps` + the staker's public key. */
-function stakerPoolSetBoxName(staker: string): Uint8Array {
+export function stakerPoolSetBoxName(staker: string): Uint8Array {
   const key = decodeAddress(staker).publicKey
   const name = new Uint8Array(3 + key.length)
   name.set(new TextEncoder().encode("sps"))

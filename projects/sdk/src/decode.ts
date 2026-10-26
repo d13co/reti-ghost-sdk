@@ -49,3 +49,28 @@ export function decodeStakersBox(box: Uint8Array): PoolStaker[] {
   }
   return stakers
 }
+
+/** A pool in a staker's pool set: the registry's `ValidatorPoolKey`. */
+export type StakerPoolKey = {
+  validatorId: bigint
+  poolId: bigint
+  poolAppId: bigint
+}
+
+/** The size of a `ValidatorPoolKey`: three uint64 */
+const POOL_KEY_BYTES = 24
+
+/**
+ * Decodes a staker's pool set (the registry's `sps` box, `ValidatorPoolKey[6]`), skipping empty slots. A re-join takes
+ * the first empty slot, so a pool's slot can change: compare pools by key, not slot.
+ */
+export function decodeStakerPoolSet(value: Uint8Array): StakerPoolKey[] {
+  const view = new DataView(value.buffer, value.byteOffset, value.byteLength)
+  const keys: StakerPoolKey[] = []
+  for (let at = 0; at + POOL_KEY_BYTES <= value.length; at += POOL_KEY_BYTES) {
+    const validatorId = view.getBigUint64(at)
+    if (validatorId === 0n) continue
+    keys.push({ validatorId, poolId: view.getBigUint64(at + 8), poolAppId: view.getBigUint64(at + 16) })
+  }
+  return keys
+}
