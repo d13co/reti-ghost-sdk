@@ -5,6 +5,7 @@ import {
   type AccountBalance,
   type AssetHolding,
   type GhostkitNode,
+  type GhostkitQueryLimits,
   type GhostkitSDKParams,
   type MbrAmountsAndProtocolConstraints,
   type NodePoolAssignmentConfig,
@@ -28,6 +29,7 @@ export type {
   AccountBalance,
   AssetHolding,
   GhostkitNode,
+  GhostkitQueryLimits,
   MbrAmountsAndProtocolConstraints,
   NodePoolAssignmentConfig,
   PoolTotals,
@@ -108,7 +110,10 @@ export type RegistryTotals = {
 export type AccountAssetRef = { account: string; assetId: number | bigint }
 
 export type RetiGhostSDKParams = {
-  /** AlgoKit `AlgorandClient`. Past-round reads need the dtalgorand forks of algosdk and algokit-utils and a dtalgorand node. */
+  /**
+   * AlgoKit `AlgorandClient`. Past-round reads need the dtalgorand forks of algosdk and algokit-utils and a dtalgorand
+   * node. Reads go through read-only queries (`POST /v2/query`) when the forks and the node have them, else simulate.
+   */
   algorand: AlgorandClient
   /** Reti registry app id: 2714516089 on MainNet */
   registryAppId: number | bigint
@@ -119,22 +124,29 @@ export type RetiGhostSDKParams = {
    * past round always use the ghost, since a deployed reader may not have existed (or had other code) then.
    */
   ghostAppId?: bigint
-  /** Funded account the reads are simulated from; defaults to the network's fee sink, which is funded at every round. */
+  /**
+   * Account the reads run as. On simulate it must hold `ghostFee` at the round read; defaults to the network's fee
+   * sink, funded at every round. Queries check no fees, so any account works there (unset: the round's fee sink).
+   */
   readerAccount?: string
-  /** How to simulate; see ghostkit. `auto` (default) uses a dtalgorand node's extended simulate when available. */
+  /**
+   * How to read; see ghostkit. `auto` (default) uses read-only queries when the forks and the node support them, else a
+   * dtalgorand node's extended simulate, else one simulate per group; `query` always queries (throws on a node without
+   * queries), `dt` always uses the extended simulate, `stock` one simulate per group; or a ghostkit backend.
+   */
   backend?: GhostkitSDKParams["backend"]
   /**
    * What each simulated group may spend on fees (it's never charged). Default 10 Algo, which covers 10,000 inner calls;
-   * the fee sink holds far more at every round.
+   * the fee sink holds far more at every round. Only on simulate; queries charge and check no fees.
    */
   ghostFee?: GhostkitSDKParams["ghostFee"]
   /** Milliseconds reads at the latest round reuse suggested params for (default 3,000) */
   cacheParamsTimeout?: number
-  /** Log each simulate */
+  /** Log each query or simulate */
   debug?: boolean
 }
 
-/** The default `ghostFee`: 10 Algo per group. */
+/** The default `ghostFee`: 10 Algo per group (simulate only). */
 const DEFAULT_GHOST_FEE = 10_000_000n
 
 /**
@@ -151,7 +163,7 @@ const BLOCK_LOOKBACK = 1000n
 
 /**
  * For calls with no inner transactions: pay just the minimum fee, so they also work at early rounds, when the fee sink
- * held too little for the default `ghostFee`.
+ * held too little for the default `ghostFee` (simulate only).
  */
 const MIN_FEE = { extraFee: microAlgo(0) }
 
@@ -210,9 +222,20 @@ export class RetiGhostSDK {
   // ---------------------------------------------------------------------------------------------------------------
   // Node
 
-  /** What kind of node this is, and its simulate limits. */
+  /** What kind of node this is, its simulate limits, and `query` (the query limits) when reads go through queries. */
   getNode(): Promise<GhostkitNode> {
     return this.ghost.getNode()
+  }
+
+  /**
+   * Fetches what the first reads wait for: the node's limits (and suggested params on a node without queries) and the
+   * registry's creation round, which every read at a past round checks. Calls fetch them anyway; this lets them arrive
+   * while the app does other work. Errors reject here; the read that needs it retries.
+   *
+   * @param options.signal Stops the wait only: the fetches are shared and carry on for the reads that need them
+   */
+  async prefetch({ signal }: SignalOptions = {}): Promise<void> {
+    await raceAbort(Promise.all([this.ghost.prefetch(), this.getRegistryCreationRound()]), signal)
   }
 
   /** Whether reads at any round since genesis work: a dtalgorand node with time travel, and the dtalgorand forks. */
@@ -223,7 +246,9 @@ export class RetiGhostSDK {
 
   /**
    * The most rounds the node simulates in one request, which bounds what one `getTimestampsAtRounds` request covers
-   * (more are split across requests). 0 if it simulates one round per request: not a dtalgorand node.
+   * (more are split across requests). 0 if it simulates one round per request: not a dtalgorand node. On a node with
+   * queries, requests cover `getNode().query.maxRounds` rounds each (16 on the local MainNet node) and run in parallel;
+   * one call takes any number of rounds either way.
    */
   async getMaxRounds(): Promise<number> {
     return (await this.getNode()).limits.maxRounds
@@ -476,9 +501,9 @@ export class RetiGhostSDK {
   }
 
   /**
-   * Each round's block timestamp, from one simulate per `getMaxRounds()` rounds on a dtalgorand node (rounds any
-   * distance apart). Rounds are deduplicated and sorted; a round that can't be read is `ok: false`. The timestamps are
-   * cached in `clock`.
+   * Each round's block timestamp, from one request (query or simulate) per `max-rounds` rounds on a dtalgorand node
+   * (rounds any distance apart). Rounds are deduplicated and sorted; a round that can't be read is `ok: false`. The
+   * timestamps are cached in `clock`.
    */
   async getTimestampsAtRounds(rounds: (number | bigint)[], options: SignalOptions = {}): Promise<SeriesPoint<number>[]> {
     const list = seriesRounds(rounds, Infinity)
@@ -502,10 +527,10 @@ export class RetiGhostSDK {
 
   /**
    * The first round from `start` whose block timestamp is at or after `target`, scanning up to 1,000 rounds in one
-   * simulate (at `start + 1000`, or the latest round if that's sooner). Undefined if no round in that span reaches
-   * `target`, or `start` is past the latest round. The result is cached in `clock`.
+   * request, query or simulate (at `start + 1000`, or the latest round if that's sooner). Undefined if no round in that
+   * span reaches `target`, or `start` is past the latest round. The result is cached in `clock`.
    *
-   * On a dtalgorand node that simulates several rounds per request, the node's status is read only when `start + 1000`
+   * On a dtalgorand node that reads several rounds per request, the node's status is read only when `start + 1000`
    * (or `knownRound`) turns out not to exist yet.
    *
    * @param target A `Date`, or seconds since the epoch
@@ -602,8 +627,8 @@ export class RetiGhostSDK {
   }
 
   /**
-   * Each validator's totals at each round: one simulate on a dtalgorand node for up to its `max-rounds` rounds. Each
-   * point carries its round's block timestamp, also cached in `clock`. See `seriesAt` for rounds that fail.
+   * Each validator's totals at each round: one request (query or simulate) per `max-rounds` rounds on a dtalgorand
+   * node. Each point carries its round's block timestamp, also cached in `clock`. See `seriesAt` for rounds that fail.
    */
   async getValidatorTotalsSeries(
     validatorIds: (number | bigint)[],
@@ -620,8 +645,8 @@ export class RetiGhostSDK {
   }
 
   /**
-   * Each pool's totals at each round: one simulate on a dtalgorand node for up to its `max-rounds` rounds. Each point
-   * carries its round's block timestamp, also cached in `clock`.
+   * Each pool's totals at each round: one request (query or simulate) per `max-rounds` rounds on a dtalgorand node.
+   * Each point carries its round's block timestamp, also cached in `clock`.
    */
   async getPoolTotalsSeries(
     poolAppIds: (number | bigint)[],
@@ -634,8 +659,8 @@ export class RetiGhostSDK {
   }
 
   /**
-   * The registry's totals at each round: one simulate on a dtalgorand node for up to its `max-rounds` rounds. Each
-   * point carries its round's block timestamp, also cached in `clock`.
+   * The registry's totals at each round: one request (query or simulate) per `max-rounds` rounds on a dtalgorand
+   * node. Each point carries its round's block timestamp, also cached in `clock`.
    */
   async getRegistryTotalsSeries(
     rounds: SeriesRounds,

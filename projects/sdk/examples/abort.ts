@@ -3,16 +3,16 @@
 import { RetiGhostSDK } from "../src"
 import { dtAlgorand, REGISTRY_APP_ID } from "./common"
 
-// Count requests, and how many fetch saw cancelled. `abortOnSimulate` aborts once a simulate request is in flight.
+// Count requests, and how many fetch saw cancelled. `abortOnRead` aborts once a simulate or query request is in flight.
 const requests: { url: string; cancelled: boolean }[] = []
-let abortOnSimulate: AbortController | undefined
+let abortOnRead: AbortController | undefined
 const realFetch = globalThis.fetch
 globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   const entry = { url: String(input instanceof Request ? input.url : input), cancelled: false }
   requests.push(entry)
-  if (abortOnSimulate && /\/v2\/transactions\/simulate(\?|$)/.test(entry.url)) {
-    const controller = abortOnSimulate
-    abortOnSimulate = undefined
+  if (abortOnRead && /\/v2\/(transactions\/simulate|query)(\?|$)/.test(entry.url)) {
+    const controller = abortOnRead
+    abortOnRead = undefined
     setTimeout(() => controller.abort(), 1)
   }
   try {
@@ -43,7 +43,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
   {
     const controller = new AbortController()
     const before = requests.length
-    abortOnSimulate = controller
+    abortOnRead = controller
     const series = settle(sdk.getRegistryTotalsSeries({ from: creation + 1_000n, to: latest, points: 64 }, { signal: controller.signal }))
     const result = await series
     const own = requests.slice(before)
@@ -54,11 +54,11 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
     check("series: no request after the abort", requests.length === sent, `${requests.length - sent} more`)
   }
 
-  // 2. An aborted pinned read cancels its simulate
+  // 2. An aborted pinned read cancels its query or simulate
   {
     const controller = new AbortController()
     const before = requests.length
-    abortOnSimulate = controller
+    abortOnRead = controller
     const read = settle(sdk.getValidators([1, 2, 3], { round: pinned, signal: controller.signal }))
     const result = await read
     check("pinned read: rejects with AbortError", !result.ok && isAbort(result.error), result.ok ? "resolved" : String(result.error))
@@ -115,7 +115,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
     const stock = new RetiGhostSDK({ algorand: dtAlgorand(), registryAppId: REGISTRY_APP_ID, backend: "stock" })
     await stock.getNode()
     const controller = new AbortController()
-    abortOnSimulate = controller
+    abortOnRead = controller
     const read = settle(stock.getValidators([1, 2, 3], { signal: controller.signal }))
     const result = await read
     check("stock backend: rejects with AbortError", !result.ok && isAbort(result.error), result.ok ? "resolved" : String(result.error))
