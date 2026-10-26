@@ -235,6 +235,7 @@ export class RetiGhostSDK {
    * @param options.signal Stops the wait only: the fetches are shared and carry on for the reads that need them
    */
   async prefetch({ signal }: SignalOptions = {}): Promise<void> {
+    signal?.throwIfAborted()
     await raceAbort(Promise.all([this.ghost.prefetch(), this.getRegistryCreationRound()]), signal)
   }
 

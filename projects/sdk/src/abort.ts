@@ -4,7 +4,11 @@
  */
 export function raceAbort<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
   if (!signal) return promise
-  if (signal.aborted) return Promise.reject(signal.reason)
+  if (signal.aborted) {
+    // nobody else may be waiting on it: its rejection mustn't go unhandled
+    promise.catch(() => {})
+    return Promise.reject(signal.reason)
+  }
   return new Promise<T>((resolve, reject) => {
     const onAbort = () => reject(signal.reason)
     signal.addEventListener("abort", onAbort, { once: true })
