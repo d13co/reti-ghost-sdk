@@ -142,7 +142,7 @@ All methods are read-only, take an optional trailing `{ round }`, and return res
 Two reads let an app do the search itself with fewer requests, e.g. against its own cache of round ↔ time pairs:
 
 - `getTimestampsAtRounds(rounds)`: the block timestamps of any rounds, from one request per `max-rounds` rounds (queries: 16 on the local MainNet node, in parallel; simulate: `getMaxRounds()`, 256 on the dtalgorand MainNet nodes), each `{ round, ok, value }` like a series point.
-- `firstRoundAtOrAfter(start, target, { knownRound? })`: the first round from `start` whose timestamp is at or after `target`, from one request (query or simulate) that scans up to 1,000 rounds. Undefined if none of them reaches it. Pass a `knownRound` the node has (e.g. the latest you've seen) to stop the scan there; without it, a scan that would end past the node's tip costs a status read and a second request.
+- `firstRoundAtOrAfter(start, target, { knownRound? })`: the first round from `start` whose timestamp is at or after `target`, from one request (query or simulate) that scans up to 1,000 rounds. Undefined if none of them reaches it. Pass a `knownRound` the node has (e.g. the latest you've seen) to stop the scan there; without it, a scan that would end past the node's tip costs a status read and a second request (and a simulate, with queries).
 
 Both add what they read to `sdk.clock`. Measured from Node.js against a dtalgorand MainNet node, rounds spread over the registry's life: 16 timestamps in 57–107 ms (16 header reads 8 at a time: 54–207 ms), a full 1,000-round scan in 70–195 ms. On a local MainNet node, 16 timestamps take 7–8 ms with queries, 21–31 ms with the extended simulate.
 
