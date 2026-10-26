@@ -18,15 +18,15 @@
   },
   "devDependencies": {
     "@algorandfoundation/algokit-client-generator": "^6.0.0",
-    "@algorandfoundation/algokit-utils": "file:../../vendor/algorandfoundation-algokit-utils-9.2.3-dt.2.tgz",
+    "@algorandfoundation/algokit-utils": "file:../../vendor/d13co-dt-algokit-utils-9.2.3-dt.2.0.1.0.tgz",
     "@algorandfoundation/algokit-utils-debug": "^1.0.4",
     "@algorandfoundation/puya-ts": "^1.0.1",
     "@rollup/plugin-typescript": "^12.1.2",
     "@tsconfig/node22": "^22.0.0",
     "@types/node": "^25.0.3",
-    "algosdk": "file:../../vendor/algosdk-3.8.0-dt.2.tgz",
+    "algosdk": "file:../../vendor/dtalgosdk-3.9.0-dt.2.0.1.0.tgz",
     "dotenv": "^16.4.7",
-    "ghostkit": "file:../../vendor/ghostkit-0.1.0-dt.1.tgz",
+    "ghostkit": "file:../../vendor/ghostkit-0.1.0-dt.2.tgz",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.7.3"
   },
