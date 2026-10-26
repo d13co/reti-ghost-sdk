@@ -1,7 +1,7 @@
 {
   "name": "reti-ghost-sdk",
-  "version": "0.3.0-dt.5",
-  "description": "Read-only SDK for the Reti staking registry, with reads at any past round on a dtalgorand node",
+  "version": "0.3.0-dt.6",
+  "description": "Read-only SDK for the Reti staking registry, with reads at any past round on a dtalgorand node, through read-only queries when the node has them",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/d13co/reti-ghost-sdk.git"
@@ -48,7 +48,8 @@
     "staking",
     "ghostkit",
     "dtalgorand",
-    "time-travel"
+    "time-travel",
+    "query"
   ],
   "author": "",
   "license": "MIT",
