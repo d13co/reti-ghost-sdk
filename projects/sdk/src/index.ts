@@ -24,6 +24,7 @@ import { FutureRoundError, isDTUnsupported, requireDT, RetiNotDeployedError, Tim
 import { RoundClock, type RoundAtOptions, type RoundTime } from "./history/dateToRound.js"
 import { getChangeRounds, stakerPoolSetBoxName, type TimelineOptions, type TimelinePage, type TimelineTarget } from "./history/timeline.js"
 import {
+  approximateLeaves,
   eventsFromStates,
   HISTORY_ROUNDS_PER_WAVE,
   newestFirst,
@@ -752,24 +753,16 @@ export class RetiGhostSDK {
     const report = () => onProgress?.({ ...progress, partial: history() })
     report()
 
-    // whether each leave may be understated: the pool paid a reward in that round. Pools leaving in one round are read
-    // together; this runs alongside the search.
-    const byLeave = new Map<bigint, number[]>()
-    pools.forEach((m, k) => {
-      if (m.leaveRound === undefined) return
-      byLeave.set(m.leaveRound, [...(byLeave.get(m.leaveRound) ?? []), k])
-    })
-    const leaves = pMap(
-      [...byLeave],
-      async ([leave, ks]) => {
-        const payouts = await this.getPoolBalancesAndLastPayouts(
-          ks.map((k) => pools[k].poolAppId),
-          { round: leave, signal },
-        )
-        ks.forEach((k, n) => approximate.set(k, payouts[n].lastPayout === leave))
-      },
-      { concurrency: 4 },
-    )
+    // whether each leave may be understated: the pool paid a reward in that round. Every leave is read in one batch,
+    // alongside the search.
+    const leaves = approximateLeaves(pools, async (leaveRounds, poolAppIds) => {
+      const points = await this.seriesAt(
+        leaveRounds,
+        (s) => s.getPoolBalancesAndLastPayouts({ methodArgsOrArgsArray: { poolAppIds } }),
+        signal,
+      )
+      return points.map((p) => (p.ok ? { ...p, value: p.value.map(([, lastPayout]) => ({ lastPayout })) } : p))
+    }).then((flags) => flags.forEach((flag, k) => approximate.set(k, flag)))
     // it's awaited below; until then a failure mustn't go unhandled
     leaves.catch(() => {})
 

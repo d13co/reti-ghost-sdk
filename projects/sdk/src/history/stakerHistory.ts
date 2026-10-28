@@ -139,6 +139,31 @@ export type PoolSearch = {
 /** Reads the staker's positions at each round. A point that fails (`ok: false`) is retried once. */
 export type PositionsReader = (rounds: bigint[]) => Promise<SeriesPoint<StakerPosition[]>[]>
 
+/** Reads each pool's last payout round at each round, pools in the order given. */
+export type LastPayoutsReader = (rounds: bigint[], poolAppIds: bigint[]) => Promise<SeriesPoint<{ lastPayout: bigint }[]>[]>
+
+/**
+ * Whether each leave may be understated (`StakeEvent.approximate`): the pool paid a reward in the round the staker
+ * left. One `read` of every leaving pool at every leave round (none without leaves), keyed by membership index. A
+ * pool that didn't exist at a round reads as no payout. Throws the error of a round that can't be read.
+ */
+export async function approximateLeaves(pools: StakerPoolMembership[], read: LastPayoutsReader): Promise<Map<number, boolean>> {
+  const approximate = new Map<number, boolean>()
+  const leaving = pools.flatMap((m, k) => (m.leaveRound === undefined ? [] : [{ k, leave: m.leaveRound, poolAppId: m.poolAppId }]))
+  if (leaving.length === 0) return approximate
+  const rounds = [...new Set(leaving.map((l) => l.leave))].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+  const poolAppIds = [...new Set(leaving.map((l) => l.poolAppId))]
+  const points = await read(rounds, poolAppIds)
+  const byRound = new Map(points.map((p) => [p.round, p]))
+  for (const { k, leave, poolAppId } of leaving) {
+    const point = byRound.get(leave)
+    if (!point) throw new Error(`approximateLeaves: no read at round ${leave}`)
+    if (!point.ok) throw point.error
+    approximate.set(k, point.value[poolAppIds.indexOf(poolAppId)].lastPayout === leave)
+  }
+  return approximate
+}
+
 export type SearchOptions = {
   /** Most rounds read per wave, shared evenly by the open spans (each gets at least one); default 64 */
   roundsPerWave?: number

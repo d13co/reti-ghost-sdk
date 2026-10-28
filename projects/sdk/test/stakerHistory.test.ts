@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest"
 import type { StakedInfo, StakerPosition } from "../src/generated/RetiReaderSDK.js"
 import type { SeriesPoint } from "../src/history/series.js"
 import {
+  approximateLeaves,
   eventsFromStates,
   newestFirst,
   searchEvents,
   stakerMemberships,
   STAKING_BLOCK_DELAY,
+  type LastPayoutsReader,
   type PositionsReader,
   type StakeEvent,
   type StakerPoolMembership,
@@ -360,5 +362,58 @@ describe("stakerMemberships", () => {
       [60n, 20n, 50n],
       [50n, 40n, undefined],
     ])
+  })
+})
+
+describe("approximateLeaves", () => {
+  const m = (poolAppId: bigint, joinRound: bigint, leaveRound?: bigint): StakerPoolMembership => ({
+    validatorId: VALIDATOR,
+    poolId: 1n,
+    poolAppId,
+    joinRound,
+    joinTimestamp: 0,
+    ...(leaveRound !== undefined ? { leaveRound, leaveTimestamp: 0 } : {}),
+  })
+  /** Each pool's last payout round at each round, from a table; 0 for a pool missing from it. */
+  const reader = (table: Record<string, Record<string, bigint>>) => {
+    const calls: [bigint[], bigint[]][] = []
+    const read: LastPayoutsReader = async (rounds, poolAppIds) => {
+      calls.push([rounds, poolAppIds])
+      return rounds.map((round) => ({
+        round,
+        ok: true as const,
+        timestamp: 0,
+        value: poolAppIds.map((p) => ({ lastPayout: table[String(round)]?.[String(p)] ?? 0n })),
+      }))
+    }
+    return { read, calls }
+  }
+
+  it("reads every leave in one call, with the distinct rounds sorted and the distinct pools", async () => {
+    // pool 50 left at 300, re-joined, left again at 100 (out of order on purpose); 60 and 70 left together at 300
+    const pools = [m(50n, 10n, 300n), m(60n, 20n, 300n), m(50n, 40n, 100n), m(70n, 30n, 300n), m(80n, 5n)]
+    const { read, calls } = reader({ "100": { "50": 100n }, "300": { "50": 299n, "60": 300n, "70": 0n } })
+    const flags = await approximateLeaves(pools, read)
+    expect(calls).toEqual([[[100n, 300n], [50n, 60n, 70n]]])
+    expect([...flags].sort(([a], [b]) => a - b)).toEqual([
+      [0, false],
+      [1, true],
+      [2, true],
+      [3, false],
+    ])
+    // a membership without a leave has no flag
+    expect(flags.has(4)).toBe(false)
+  })
+
+  it("throws the error of a round that can't be read", async () => {
+    const error = new Error("round 300 failed")
+    const read: LastPayoutsReader = async (rounds) => rounds.map((round) => ({ round, ok: false as const, error }))
+    await expect(approximateLeaves([m(50n, 10n, 300n)], read)).rejects.toBe(error)
+  })
+
+  it("reads nothing without leaves", async () => {
+    const { read, calls } = reader({})
+    expect((await approximateLeaves([m(50n, 10n)], read)).size).toBe(0)
+    expect(calls).toEqual([])
   })
 })
