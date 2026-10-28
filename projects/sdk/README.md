@@ -24,8 +24,8 @@ Reads at past rounds need the dtalgorand forks of algosdk and algokit-utils, whi
 ```yaml
 # pnpm: pnpm-workspace.yaml, or "pnpm": { "overrides": { ... } } in package.json
 overrides:
-  algosdk: https://raw.githubusercontent.com/d13co/reti-ghost-sdk/v0.3.0-dt.6/vendor/dtalgosdk-3.9.0-dt.2.0.1.0.tgz
-  '@algorandfoundation/algokit-utils': https://raw.githubusercontent.com/d13co/reti-ghost-sdk/v0.3.0-dt.6/vendor/d13co-dt-algokit-utils-9.2.3-dt.2.0.1.0.tgz
+  algosdk: https://raw.githubusercontent.com/d13co/reti-ghost-sdk/v0.3.0-dt.8/vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz
+  '@algorandfoundation/algokit-utils': https://raw.githubusercontent.com/d13co/reti-ghost-sdk/v0.3.0-dt.8/vendor/d13co-dt-algokit-utils-9.2.3-dt.3.0.0.1.tgz
 ```
 
 With npm, put the same two entries under `"overrides"` in `package.json`. You can also copy the tarballs into your repo and point at them with `file:`.
@@ -230,6 +230,7 @@ Ghost Mainnet App ID: 3374692547 **currently updatable by author.** It runs the 
 - Chunking follows the node's simulate limits (`max-txn-groups`, `resource-limit-multiplier`) and the AVM's 256 inner transactions per group: `getValidators` takes 64 validators per group, the other validator reads 127 (a stock node allows 16 × 8 unnamed references per group, and the registry app takes one; at 256 per group, as before 0.3.0-dt.6, they failed on a stock node from validator 128 on); a dtalgorand node sends up to 16 groups per request. The chunks stay the same with queries, so a fallback to simulate needs no re-chunking; there each app call runs alone, with the node's per-call budget (`getNode().query.maxCallBudget`, 320,000 on the local MainNet node), and requests follow the query limits.
 - A query for a round past the node's tip (`firstRoundAtOrAfter` without `knownRound` near the tip, or `getTimestampsAtRounds` with future rounds) is answered through simulate instead, with the same result.
 - An asset or pool app that existed and was later destroyed or deleted can't be read at rounds after that; the simulate fails as "unavailable". Ids not created yet at a round are handled.
+- Retries come from algokit-utils' algod client. With the fork 9.2.3-dt.3 or later, a busy node's 503 is retried after at least 1 s; a 503 for history the node can't serve (e.g. untrusted history) and a 504 from a `/versions` listing (the node's time limit) are thrown at once, not after ~14 s of retries. On a 504 from `getChangeRounds` or another timeline read, narrow the range.
 
 
 ## Development
