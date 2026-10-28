@@ -43,6 +43,7 @@ See [the repo README](https://github.com/d13co/reti-ghost-sdk/tree/dtalgorand#re
 | Reads at the latest round | any algod |
 | Reads at a past round, date lookup, series | a dtalgorand node with time travel (`GET /v2/transactions/simulate/limits` reports `time-travel: true`) |
 | Change timeline | a dtalgorand node (`/versions` endpoints) |
+| Pool algod version history | a dtalgorand node with versions key filters (`key=` on `…/versions`), and the forks at algosdk 3.9.0-dt.3.0.0.1 / algokit-utils 9.2.3-dt.3.0.0.1 or later |
 | Faster reads (queries) | a dtalgorand node with queries (`…/simulate/limits` reports a `query` object); without it the same reads go through simulate |
 
 `sdk.getNode()` reports what was detected, the node's simulate limits, and `query` (the query limits) when reads go through queries; `sdk.supportsTimeTravel()` answers the main question, and `sdk.getMaxRounds()` how many rounds one simulate request covers. `sdk.prefetch()` fetches what the first reads wait for (the node's limits, the registry's creation round, and suggested params on a node without queries), so an app can start it early.
@@ -116,6 +117,7 @@ All methods are read-only, take an optional trailing `{ round }`, and return res
 - `getPoolStates(poolAppIds)`: global state and account balance per pool: `exists`, `validatorId`, `poolId`, `numStakers`, `staked`, `minEntryStake`, `lastPayout`, `epochNumber`, `algodVer`, `roundsPerDay`, `binRoundStart`, `rewardAccumulator`, `stakeAccumulator`, `ewma` (the APY moving average the UI reads), `balance`, `minBalance`.
 - `getPoolTotals(poolAppIds)`: `{ poolAppId, numStakers, staked }`, made for charts.
 - `getPoolBalancesAndLastPayouts(poolAppIds)`, `getPoolAlgodVersions(poolAppIds)`.
+- `getPoolAlgodVersionChanges(poolAppId)`: every change of the pool's reported algod version; see [Node upgrades](#node-upgrades).
 - `getPoolStakers(poolAppId)`: the pool's `stakers` box (one REST read), empty slots left out.
 
 ### Stakers and accounts
@@ -160,6 +162,10 @@ Both add what they read to `sdk.clock`. Measured from Node.js against a dtalgora
 | `{ staker: address }` | the set of pools the staker is in |
 
 It returns rounds and timestamps only. Read the state at a chosen round with `{ round }`. The full history is large (the registry ~80k changes since Jan 2025, one validator ~10k), so a call needs `minRound`, or uses `order: 'desc'` with `limit` ≤ 1,000. Measured: the last 20 changes of a validator in one request (~80 ms), a 2-week window (~180 changes) in ~40 ms. Page with `next`.
+
+### Node upgrades
+
+`sdk.getPoolAlgodVersionChanges(poolAppId, { minRound, maxRound, signal })` lists every change of a pool's reported algod version (its `algodVer` global state key), oldest first: `{ round, timestamp, algodVer }`, with `algodVer` `""` where the key was removed or the pool deleted. It reads the pool app's versions filtered to that key (`key=`), sent straight to the node: one request per ~1,000 changes, and the node may return short pages while it scans, which the listing pages through. It doesn't probe for the filter, so it needs a node that has it. Errors pass through: without the forks or `/versions` an error for which `isDTUnsupported` is true, the node's own error otherwise, a 504 (narrow the range), or the signal's reason. Measured on a local MainNet node: a pool's whole history (25 changes since Jan 2025) in 2 requests, ~35 ms, the same list as the raw `key=` pages; the same from keys-only versions pages took ~84 requests plus a read of the values.
 
 ### Series
 
@@ -235,12 +241,13 @@ Ghost Mainnet App ID: 3374692547 **currently updatable by author.** It runs the 
 
 ## Development
 
-- Tests: `pnpm test` (vitest, `test/`): the staker history search against a simulated pool ledger.
+- Tests: `pnpm test` (vitest, `test/`): the staker history search against a simulated pool ledger, the leave payout batch, timeline targets, and the algod version history mapping.
 - Build: `algokit project run build` at the repo root, or `pnpm --filter smart_contracts build && pnpm --filter reti-ghost-sdk build`. The SDK build copies the generated reader client from the contracts project into `src/generated/`.
 - Examples (`examples/`, run with `npx tsx`; point `DT_ALGOD_SERVER` at a dtalgorand MainNet node, and set `DT_ALGOD_TOKEN` if it needs one):
   - `at-round.ts [round|latest]`: everything the UI reads, at a round
   - `date-to-round.ts [date]`, `timeline.ts [validatorId]`, `series.ts [points]`
   - `staker-history.ts <address> [validatorId]`: a staker's pools and deposits and withdrawals, with the search's progress
+  - `pool-upgrades.ts [poolAppId]`: a pool's algod version changes, the latest read back at its round
   - `abort.ts`: aborting reads (series, pinned reads, `roundAt` between probes, shared header reads, the stock backend). Last run: all 13 pass, on a local MainNet node with queries and on one without.
   - `verify.ts [points]`: cross-checks the SDK's reads with REST reads at the same rounds (validator boxes byte for byte, pool global state and balances, staker positions and balances) over the registry's life. Last run: 255 rounds through queries, 32 through the extended simulate, all match.
   - `query-vs-simulate.ts [points]`: the same reads through queries and through the extended simulate, every value compared, with timings and the requests each sent; on a node without queries, checks that reads fall back to simulate. Last run: all 74 checks pass with queries, 73 on the fallback.

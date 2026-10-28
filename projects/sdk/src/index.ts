@@ -22,6 +22,7 @@ import { bytesToBigInt, decodeStakersBox, type PoolStaker } from "./decode.js"
 import { abortable, raceAbort, sim, simOptions } from "./abort.js"
 import { FutureRoundError, isDTUnsupported, requireDT, RetiNotDeployedError, TimeTravelUnavailableError } from "./errors.js"
 import { RoundClock, type RoundAtOptions, type RoundTime } from "./history/dateToRound.js"
+import { getPoolAlgodVersionChanges, type AlgodVersionChange, type AlgodVersionChangesOptions } from "./history/algodVersions.js"
 import { getChangeRounds, stakerPoolSetBoxName, type TimelineOptions, type TimelinePage, type TimelineTarget } from "./history/timeline.js"
 import {
   approximateLeaves,
@@ -60,6 +61,7 @@ export type { StakedInfo } from "./generated/RetiReaderSDK.js"
 export { GhostkitError } from "./generated/RetiReaderSDK.js"
 export { FutureRoundError, RetiNotDeployedError, TimeTravelUnavailableError, isDTUnsupported } from "./errors.js"
 export { RoundClock, type RoundAtOptions, type RoundTime } from "./history/dateToRound.js"
+export { ALGOD_VERSION_KEY, type AlgodVersionChange, type AlgodVersionChangesOptions } from "./history/algodVersions.js"
 export { MAX_UNBOUNDED_CHANGES, type Change, type TimelineOptions, type TimelinePage, type TimelineTarget } from "./history/timeline.js"
 export { MAX_SERIES_POINTS, seriesRounds, type SeriesPoint, type SeriesRounds } from "./history/series.js"
 export { decodeStakerPoolSet, type PoolStaker, type StakerPoolKey } from "./decode.js"
@@ -679,6 +681,15 @@ export class RetiGhostSDK {
    */
   getChangeRounds(target: TimelineTarget, options?: TimelineOptions): Promise<TimelinePage> {
     return getChangeRounds(this.algorand, this.registryAppId, target, options)
+  }
+
+  /**
+   * Every change of a pool's reported algod version (`algodVer`), oldest first, with each round's timestamp: the pool
+   * app's versions filtered to that key, one request per ~1,000 changes (a pool's whole history is 1–2). Needs a
+   * dtalgorand node with versions key filters; errors pass through (`isDTUnsupported` without the forks or `/versions`).
+   */
+  getPoolAlgodVersionChanges(poolAppId: number | bigint, options?: AlgodVersionChangesOptions): Promise<AlgodVersionChange[]> {
+    return getPoolAlgodVersionChanges(this.algorand, poolAppId, options)
   }
 
   /**
