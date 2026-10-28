@@ -1,6 +1,7 @@
 import type { AlgorandClient } from "@algorandfoundation/algokit-utils"
 import { decodeAddress } from "algosdk"
 import { uint64BoxName } from "../decode.js"
+import { requireDT } from "../errors.js"
 
 /** What to list the changes of. */
 export type TimelineTarget =
@@ -54,6 +55,8 @@ export const MAX_UNBOUNDED_CHANGES = 1_000
  *
  * The full history is large (the registry: ~80k changes since Jan 2025, one validator: ~10k), so a call is either
  * bounded by `minRound` or limited to the last 1,000 changes.
+ *
+ * Throws an error for which `isDTUnsupported` is true without the dtalgorand forks or on a node without `/versions`.
  */
 export async function getChangeRounds(
   algorand: AlgorandClient,
@@ -72,7 +75,7 @@ export async function getChangeRounds(
     ...(next ? { next } : {}),
     ...(signal ? { signal } : {}),
   }
-  const dt = algorand.dt
+  const dt = requireDT(algorand, "getChangeRounds")
   const page =
     "validator" in target
       ? await dt.getBoxVersions(registryAppId, uint64BoxName("v", target.validator), options)

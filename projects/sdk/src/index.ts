@@ -20,7 +20,7 @@ import {
 } from "./generated/RetiReaderSDK.js"
 import { bytesToBigInt, decodeStakersBox, type PoolStaker } from "./decode.js"
 import { abortable, raceAbort, sim, simOptions } from "./abort.js"
-import { FutureRoundError, isDTUnsupported, RetiNotDeployedError, TimeTravelUnavailableError } from "./errors.js"
+import { FutureRoundError, isDTUnsupported, requireDT, RetiNotDeployedError, TimeTravelUnavailableError } from "./errors.js"
 import { RoundClock, type RoundAtOptions, type RoundTime } from "./history/dateToRound.js"
 import { getChangeRounds, stakerPoolSetBoxName, type TimelineOptions, type TimelinePage, type TimelineTarget } from "./history/timeline.js"
 import {
@@ -673,7 +673,8 @@ export class RetiGhostSDK {
 
   /**
    * The rounds at which a validator, pool, staker or the registry changed, newest first by default. Rounds only: read
-   * the state at a chosen round with `{ round }`. Bounded by `minRound`, or limited to the last 1,000 changes.
+   * the state at a chosen round with `{ round }`. Bounded by `minRound`, or limited to the last 1,000 changes. Throws an
+   * error for which `isDTUnsupported` is true without the dtalgorand forks or on a node without `/versions`.
    */
   getChangeRounds(target: TimelineTarget, options?: TimelineOptions): Promise<TimelinePage> {
     return getChangeRounds(this.algorand, this.registryAppId, target, options)
@@ -681,7 +682,8 @@ export class RetiGhostSDK {
 
   /**
    * Every pool a staker was ever in, and when, oldest join first: the versions of the registry's `sps` box for the
-   * staker, which is never deleted (one request per 1,000 changes to it). Needs a dtalgorand node (`/versions`).
+   * staker, which is never deleted (one request per 1,000 changes to it). Throws an error for which `isDTUnsupported` is
+   * true without the dtalgorand forks or on a node without `/versions`.
    */
   async getStakerPools(staker: string, { maxRound, signal }: { maxRound?: number | bigint } & SignalOptions = {}): Promise<StakerPoolMembership[]> {
     const { versions } = await this.stakerPoolSetVersions(staker, maxRound, signal)
@@ -924,12 +926,13 @@ export class RetiGhostSDK {
     maxRound: number | bigint | undefined,
     signal?: AbortSignal,
   ): Promise<{ versions: StakerPoolSetVersion[]; round: bigint }> {
+    const dt = requireDT(this.algorand, "getStakerPools")
     const round = maxRound !== undefined ? BigInt(maxRound) : await raceAbort(this.latestRound(0n, STATUS_MAX_AGE_MS), signal)
     const name = stakerPoolSetBoxName(staker)
     const versions: StakerPoolSetVersion[] = []
     let next: string | undefined
     do {
-      const page = await this.algorand.dt.getBoxVersions(this.registryAppId, name, {
+      const page = await dt.getBoxVersions(this.registryAppId, name, {
         includeValues: true,
         order: "asc",
         limit: 1_000,
