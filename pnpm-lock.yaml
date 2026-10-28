@@ -46,8 +46,8 @@ importers:
         specifier: ^16.4.7
         version: 16.6.1
       ghostkit:
-        specifier: file:../../vendor/ghostkit-0.1.0-dt.2.tgz
-        version: file:vendor/ghostkit-0.1.0-dt.2.tgz
+        specifier: file:../../vendor/ghostkit-0.1.0-dt.3.tgz
+        version: file:vendor/ghostkit-0.1.0-dt.3.tgz
       ts-node-dev:
         specifier: ^2.0.0
         version: 2.0.0(@types/node@25.0.3)(typescript@5.9.3)
@@ -744,9 +744,9 @@ packages:
   get-tsconfig@4.13.0:
     resolution: {integrity: sha512-1VKTZJCwBrvbd+Wn3AOgQP/2Av+TfTCOlE4AcRJE72W1ksZXbAx8PPBR9RzgTeSPzlPMHrbANMH3LbltH73wxQ==}
 
-  ghostkit@file:vendor/ghostkit-0.1.0-dt.2.tgz:
-    resolution: {integrity: sha512-RCL6f65qR+NdWsteGtWA7YS3rjw84NG9hMIwg8JVLNfrCjFSYLWoDqi+10gko3YFto7zoMH6kwKXhq6JAog+Fw==, tarball: file:vendor/ghostkit-0.1.0-dt.2.tgz}
-    version: 0.1.0-dt.2
+  ghostkit@file:vendor/ghostkit-0.1.0-dt.3.tgz:
+    resolution: {integrity: sha512-TzUv5eAzBjvtO9kHPIiRlBR2i8WXlIFpMi1/Zw5GXoTT0Q7HNlIwgXQwsOvpdDE5acRWQ4uXvL6sb1eCgqfrMA==, tarball: file:vendor/ghostkit-0.1.0-dt.3.tgz}
+    version: 0.1.0-dt.3
     hasBin: true
 
   glob-parent@5.1.2:
@@ -1745,7 +1745,7 @@ snapshots:
     dependencies:
       resolve-pkg-maps: 1.0.0
 
-  ghostkit@file:vendor/ghostkit-0.1.0-dt.2.tgz:
+  ghostkit@file:vendor/ghostkit-0.1.0-dt.3.tgz:
     dependencies:
       '@algorandfoundation/algokit-utils': '@d13co/dt-algokit-utils@file:vendor/d13co-dt-algokit-utils-9.2.3-dt.3.0.0.1.tgz(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz)'
       algosdk: dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz
