@@ -27,8 +27,8 @@ export function raceAbort<T>(promise: Promise<T>, signal?: AbortSignal): Promise
 
 /**
  * Runs a read, failing with the signal's reason (an `AbortError` unless the caller gave another) once it has aborted.
- * A simulate on a node without dtalgorand's extended simulate reports an abort as a failed call (`GhostkitError`), and
- * this turns it back into the abort.
+ * The generated reader (ghostkit 0.1.0-dt.3) rejects with the reason on every backend; this also covers the shared
+ * reads before it, and a reader built with an older ghostkit, which reported an abort on a stock node as a failed call.
  */
 export async function abortable<T>(signal: AbortSignal | undefined, read: () => Promise<T>): Promise<T> {
   signal?.throwIfAborted()

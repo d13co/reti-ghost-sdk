@@ -89,7 +89,7 @@ Every read also takes a `signal` (an `AbortSignal`): `{ round, signal }` for rea
 
 - With the dtalgorand fork of algokit-utils 9.2.3-dt.2 or later, the read's HTTP requests are cancelled and not retried, queries and simulates alike. With an older one the read still rejects on abort, but its requests run to the end.
 - Reads other calls share (node detection, the registry's creation round, the node's status, cached block headers) aren't cancelled: the aborted read stops waiting for them, and they carry on for the others.
-- On a stock node, `composer.simulate` can't pass the signal to fetch, so its simulate runs to the end.
+- On a stock node, `composer.simulate` can't pass the signal to fetch, so its simulate runs to the end; the read still rejects with the reason at once.
 - Past-round reads cost about the same as latest ones. Measured from Node.js on a local MainNet node, with queries / with the extended simulate: `getValidators` for all 227 validators 40–46 / 64–107 ms, `getValidatorConfig` 227 21–23 / 34–53 ms, `getPoolStates` for 286 pools 30–58 / 44–78 ms, `getStakerPositions` for 50 stakers 9–17 / 21–59 ms, `getBlockTimestamps(1000)` 10–39 / 12–65 ms, small reads (MBR, assets, 50 balances) 3–8 / 4–51 ms.
 
 

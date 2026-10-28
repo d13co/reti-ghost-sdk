@@ -569,7 +569,7 @@ export class RetiGhostSDK {
         simOptions(options),
       ),
     )
-    // a node without extended simulate reports an abort as failed rounds
+    // the reader rejects with the reason itself since ghostkit 0.1.0-dt.3; a guard in case an abort still shows as failed rounds
     options.signal?.throwIfAborted()
     return results.map((r): SeriesPoint<number> => {
       if (!r.ok) return { round: r.round, ok: false, error: r.error }
@@ -887,7 +887,7 @@ export class RetiGhostSDK {
           )
         : undefined,
     ])
-    // a node without extended simulate reports an abort as failed rounds
+    // the reader rejects with the reason itself since ghostkit 0.1.0-dt.3; a guard in case an abort still shows as failed rounds
     signal?.throwIfAborted()
     const byRound = new Map<bigint, Outcome>(pastResults.map((r) => [r.round, r]))
     return plans.map((p): SeriesPoint<T> => {
