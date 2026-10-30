@@ -5,8 +5,8 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  algosdk: file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz
-  '@algorandfoundation/algokit-utils': file:vendor/d13co-dt-algokit-utils-9.2.3-dt.3.0.0.1.tgz
+  algosdk: file:vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz
+  '@algorandfoundation/algokit-utils': file:vendor/d13co-dt-algokit-utils-9.2.3-dt.4.1.0.0.tgz
 
 importers:
 
@@ -20,13 +20,13 @@ importers:
     devDependencies:
       '@algorandfoundation/algokit-client-generator':
         specifier: ^6.0.0
-        version: 6.0.1(@d13co/dt-algokit-utils@file:vendor/d13co-dt-algokit-utils-9.2.3-dt.3.0.0.1.tgz(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz))(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz)
+        version: 6.0.1(@d13co/dt-algokit-utils@file:vendor/d13co-dt-algokit-utils-9.2.3-dt.4.1.0.0.tgz(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz))(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz)
       '@algorandfoundation/algokit-utils':
-        specifier: file:../../vendor/d13co-dt-algokit-utils-9.2.3-dt.3.0.0.1.tgz
-        version: '@d13co/dt-algokit-utils@file:vendor/d13co-dt-algokit-utils-9.2.3-dt.3.0.0.1.tgz(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz)'
+        specifier: file:../../vendor/d13co-dt-algokit-utils-9.2.3-dt.4.1.0.0.tgz
+        version: '@d13co/dt-algokit-utils@file:vendor/d13co-dt-algokit-utils-9.2.3-dt.4.1.0.0.tgz(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz)'
       '@algorandfoundation/algokit-utils-debug':
         specifier: ^1.0.4
-        version: 1.0.4(@d13co/dt-algokit-utils@file:vendor/d13co-dt-algokit-utils-9.2.3-dt.3.0.0.1.tgz(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz))(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz)
+        version: 1.0.4(@d13co/dt-algokit-utils@file:vendor/d13co-dt-algokit-utils-9.2.3-dt.4.1.0.0.tgz(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz))(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz)
       '@algorandfoundation/puya-ts':
         specifier: ^1.0.1
         version: 1.0.1
@@ -40,14 +40,14 @@ importers:
         specifier: ^25.0.3
         version: 25.0.3
       algosdk:
-        specifier: file:../../vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz
-        version: dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz
+        specifier: file:../../vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz
+        version: dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz
       dotenv:
         specifier: ^16.4.7
         version: 16.6.1
       ghostkit:
-        specifier: file:../../vendor/ghostkit-0.1.0-dt.3.tgz
-        version: file:vendor/ghostkit-0.1.0-dt.3.tgz
+        specifier: file:../../vendor/ghostkit-0.1.0-dt.4.tgz
+        version: file:vendor/ghostkit-0.1.0-dt.4.tgz
       ts-node-dev:
         specifier: ^2.0.0
         version: 2.0.0(@types/node@25.0.3)(typescript@5.9.3)
@@ -58,11 +58,11 @@ importers:
   projects/sdk:
     dependencies:
       '@algorandfoundation/algokit-utils':
-        specifier: file:../../vendor/d13co-dt-algokit-utils-9.2.3-dt.3.0.0.1.tgz
-        version: '@d13co/dt-algokit-utils@file:vendor/d13co-dt-algokit-utils-9.2.3-dt.3.0.0.1.tgz(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz)'
+        specifier: file:../../vendor/d13co-dt-algokit-utils-9.2.3-dt.4.1.0.0.tgz
+        version: '@d13co/dt-algokit-utils@file:vendor/d13co-dt-algokit-utils-9.2.3-dt.4.1.0.0.tgz(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz)'
       algosdk:
-        specifier: file:../../vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz
-        version: dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz
+        specifier: file:../../vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz
+        version: dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz
     devDependencies:
       '@types/node':
         specifier: ^25.0.3
@@ -113,12 +113,12 @@ packages:
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
     engines: {node: '>=12'}
 
-  '@d13co/dt-algokit-utils@file:vendor/d13co-dt-algokit-utils-9.2.3-dt.3.0.0.1.tgz':
-    resolution: {integrity: sha512-vfuSSYaEoyXkdOgvsDIib5mLasu7r9fx6qOXRi9WfFEl6a9b5V+ZZ8WFmetGJXf9ghd2C5iSutOzIDCe8RBVVQ==, tarball: file:vendor/d13co-dt-algokit-utils-9.2.3-dt.3.0.0.1.tgz}
-    version: 9.2.3-dt.3.0.0.1
+  '@d13co/dt-algokit-utils@file:vendor/d13co-dt-algokit-utils-9.2.3-dt.4.1.0.0.tgz':
+    resolution: {integrity: sha512-VI2kLqvfBl0hN00V3ssLXvjsqj2c+j93Eatf8oDOl9LqlPNvcQVeM/2e29CoHD1XV+JaCTZr1JNEtu869vbpiA==, tarball: file:vendor/d13co-dt-algokit-utils-9.2.3-dt.4.1.0.0.tgz}
+    version: 9.2.3-dt.4.1.0.0
     engines: {node: '>=22.0'}
     peerDependencies:
-      algosdk: ^3.5.2 || ^3.8.0-dt.0 || ^3.9.0-dt.0
+      algosdk: ^3.5.2 || ^3.9.0-dt.4.1.0.0
 
   '@esbuild/aix-ppc64@0.27.2':
     resolution: {integrity: sha512-GZMB+a0mOMZs4MpDbj8RJp4cw+w1WV5NYD6xzgvzUJ5Ek2jerwfO2eADyI6ExDSUED+1X8aMbegahsJi+8mgpw==}
@@ -678,9 +678,9 @@ packages:
     resolution: {integrity: sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==}
     engines: {node: '>=12'}
 
-  dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz:
-    resolution: {integrity: sha512-/lQyLigLlPzwkEyBgdQ892NIwIuJ9cqG8ZlouA/EOEpd9QLZfAwMq0vRAH/ggbYbtJuMGNhKlTjEkCflKC+CPA==, tarball: file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz}
-    version: 3.9.0-dt.3.0.0.1
+  dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz:
+    resolution: {integrity: sha512-+C78ke+iWJWaE2UnncmM0E7WtbBwzsEgElic03CUQnTmVjE8uc4SJ9YNx71q5pp/4IwhyXi7mQiApHNg5QJCGQ==, tarball: file:vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz}
+    version: 3.9.0-dt.4.1.0.0
     engines: {node: '>=22.0'}
 
   dynamic-dedupe@0.3.0:
@@ -744,9 +744,9 @@ packages:
   get-tsconfig@4.13.0:
     resolution: {integrity: sha512-1VKTZJCwBrvbd+Wn3AOgQP/2Av+TfTCOlE4AcRJE72W1ksZXbAx8PPBR9RzgTeSPzlPMHrbANMH3LbltH73wxQ==}
 
-  ghostkit@file:vendor/ghostkit-0.1.0-dt.3.tgz:
-    resolution: {integrity: sha512-TzUv5eAzBjvtO9kHPIiRlBR2i8WXlIFpMi1/Zw5GXoTT0Q7HNlIwgXQwsOvpdDE5acRWQ4uXvL6sb1eCgqfrMA==, tarball: file:vendor/ghostkit-0.1.0-dt.3.tgz}
-    version: 0.1.0-dt.3
+  ghostkit@file:vendor/ghostkit-0.1.0-dt.4.tgz:
+    resolution: {integrity: sha512-ZD43rTwr2tZ/9qa92O2VKlFVpKSDRuYaZji9mPh2/4q28K3e/z7b0acEYQzIVNFkak+IFFRsoCC4quYTdWg0wA==, tarball: file:vendor/ghostkit-0.1.0-dt.4.tgz}
+    version: 0.1.0-dt.4
     hasBin: true
 
   glob-parent@5.1.2:
@@ -1221,19 +1221,19 @@ packages:
 
 snapshots:
 
-  '@algorandfoundation/algokit-client-generator@6.0.1(@d13co/dt-algokit-utils@file:vendor/d13co-dt-algokit-utils-9.2.3-dt.3.0.0.1.tgz(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz))(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz)':
+  '@algorandfoundation/algokit-client-generator@6.0.1(@d13co/dt-algokit-utils@file:vendor/d13co-dt-algokit-utils-9.2.3-dt.4.1.0.0.tgz(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz))(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz)':
     dependencies:
-      '@algorandfoundation/algokit-utils': '@d13co/dt-algokit-utils@file:vendor/d13co-dt-algokit-utils-9.2.3-dt.3.0.0.1.tgz(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz)'
-      algosdk: dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz
+      '@algorandfoundation/algokit-utils': '@d13co/dt-algokit-utils@file:vendor/d13co-dt-algokit-utils-9.2.3-dt.4.1.0.0.tgz(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz)'
+      algosdk: dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz
       chalk: 5.6.2
       change-case: 5.4.4
       commander: 14.0.2
       jsonschema: 1.5.0
 
-  '@algorandfoundation/algokit-utils-debug@1.0.4(@d13co/dt-algokit-utils@file:vendor/d13co-dt-algokit-utils-9.2.3-dt.3.0.0.1.tgz(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz))(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz)':
+  '@algorandfoundation/algokit-utils-debug@1.0.4(@d13co/dt-algokit-utils@file:vendor/d13co-dt-algokit-utils-9.2.3-dt.4.1.0.0.tgz(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz))(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz)':
     dependencies:
-      '@algorandfoundation/algokit-utils': '@d13co/dt-algokit-utils@file:vendor/d13co-dt-algokit-utils-9.2.3-dt.3.0.0.1.tgz(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz)'
-      algosdk: dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz
+      '@algorandfoundation/algokit-utils': '@d13co/dt-algokit-utils@file:vendor/d13co-dt-algokit-utils-9.2.3-dt.4.1.0.0.tgz(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz)'
+      algosdk: dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz
       buffer: 6.0.3
 
   '@algorandfoundation/algorand-typescript@1.0.1(tslib@2.8.1)':
@@ -1263,9 +1263,9 @@ snapshots:
     dependencies:
       '@jridgewell/trace-mapping': 0.3.9
 
-  '@d13co/dt-algokit-utils@file:vendor/d13co-dt-algokit-utils-9.2.3-dt.3.0.0.1.tgz(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz)':
+  '@d13co/dt-algokit-utils@file:vendor/d13co-dt-algokit-utils-9.2.3-dt.4.1.0.0.tgz(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz)':
     dependencies:
-      algosdk: dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz
+      algosdk: dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz
       buffer: 6.0.3
 
   '@esbuild/aix-ppc64@0.27.2':
@@ -1657,7 +1657,7 @@ snapshots:
 
   dotenv@16.6.1: {}
 
-  dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz:
+  dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz:
     dependencies:
       algorand-msgpack: 1.1.0
       hi-base32: 0.5.1
@@ -1745,10 +1745,10 @@ snapshots:
     dependencies:
       resolve-pkg-maps: 1.0.0
 
-  ghostkit@file:vendor/ghostkit-0.1.0-dt.3.tgz:
+  ghostkit@file:vendor/ghostkit-0.1.0-dt.4.tgz:
     dependencies:
-      '@algorandfoundation/algokit-utils': '@d13co/dt-algokit-utils@file:vendor/d13co-dt-algokit-utils-9.2.3-dt.3.0.0.1.tgz(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz)'
-      algosdk: dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz
+      '@algorandfoundation/algokit-utils': '@d13co/dt-algokit-utils@file:vendor/d13co-dt-algokit-utils-9.2.3-dt.4.1.0.0.tgz(dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz)'
+      algosdk: dtalgosdk@file:vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz
       change-case: 5.4.4
 
   glob-parent@5.1.2:

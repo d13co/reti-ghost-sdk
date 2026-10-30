@@ -96,8 +96,8 @@ export type ReadOptions = {
   round?: number | bigint
   /**
    * Aborts the read: its requests are cancelled and it rejects with the signal's reason (a `DOMException` named
-   * `AbortError` by default). Cancelling needs the dtalgorand fork of algokit-utils 9.2.3-dt.2 or later; with an older
-   * one the read still rejects on abort, but its requests run to the end. Reads other calls share (node detection, the
+   * `AbortError` by default). Cancelling needs the dtalgorand fork of algokit-utils; with stock algokit-utils
+   * the read still rejects on abort, but its requests run to the end. Reads other calls share (node detection, the
    * registry's creation round, the node's status) carry on for them.
    */
   signal?: AbortSignal
@@ -186,8 +186,9 @@ export type RetiGhostSDKParams = {
   readerAccount?: string
   /**
    * How to read; see ghostkit. `auto` (default) uses read-only queries when the forks and the node support them, else a
-   * dtalgorand node's extended simulate, else one simulate per group; `query` always queries (throws on a node without
-   * queries), `dt` always uses the extended simulate, `stock` one simulate per group; or a ghostkit backend.
+   * dtalgorand node's extended simulate, else one simulate per group; `query` always queries (throws on stock algod and
+   * on a node with queries off), `dt` always uses the extended simulate (throws on stock algod), `stock` one simulate per
+   * group; or a ghostkit backend.
    */
   backend?: GhostkitSDKParams["backend"]
   /**
@@ -302,8 +303,8 @@ export class RetiGhostSDK {
 
   /**
    * The most rounds the node simulates in one request, which bounds what one `getTimestampsAtRounds` request covers
-   * (more are split across requests). 0 if it simulates one round per request: not a dtalgorand node. On a node with
-   * queries, requests cover `getNode().query.maxRounds` rounds each (16 on the local MainNet node) and run in parallel;
+   * (more are split across requests). 0 if it simulates one round per request: stock algod, or a dtalgorand node with
+   * multi-round simulate off. On a node with queries, requests cover `getNode().query.maxRounds` rounds each (16 on the local MainNet node) and run in parallel;
    * one call takes any number of rounds either way.
    */
   async getMaxRounds(): Promise<number> {

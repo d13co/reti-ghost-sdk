@@ -24,13 +24,13 @@ Reads at past rounds need the dtalgorand forks of algosdk and algokit-utils, whi
 ```yaml
 # pnpm: pnpm-workspace.yaml, or "pnpm": { "overrides": { ... } } in package.json
 overrides:
-  algosdk: https://raw.githubusercontent.com/d13co/reti-ghost-sdk/v0.3.0-dt.8/vendor/dtalgosdk-3.9.0-dt.3.0.0.1.tgz
-  '@algorandfoundation/algokit-utils': https://raw.githubusercontent.com/d13co/reti-ghost-sdk/v0.3.0-dt.8/vendor/d13co-dt-algokit-utils-9.2.3-dt.3.0.0.1.tgz
+  algosdk: https://raw.githubusercontent.com/d13co/reti-ghost-sdk/v0.3.0-dt.9/vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz
+  '@algorandfoundation/algokit-utils': https://raw.githubusercontent.com/d13co/reti-ghost-sdk/v0.3.0-dt.9/vendor/d13co-dt-algokit-utils-9.2.3-dt.4.1.0.0.tgz
 ```
 
-With npm, put the same two entries under `"overrides"` in `package.json`. You can also copy the tarballs into your repo and point at them with `file:`.
+With npm, put the same two entries under `"overrides"` in `package.json`. If your app also depends on `algosdk` or `@algorandfoundation/algokit-utils` directly, npm rejects an override that conflicts with a direct dependency (`EOVERRIDE`): set the direct dependencies to the tarball URLs and make the overrides refer to them, `"overrides": { "algosdk": "$algosdk", "@algorandfoundation/algokit-utils": "$@algorandfoundation/algokit-utils" }`. You can also copy the tarballs into your repo and point at them with `file:`.
 
-The SDK detects the forks at runtime. With stock algosdk and algokit-utils it still reads the latest state, and reads at older rounds throw `TimeTravelUnavailableError` (see [Reading at a Past Round](#reading-at-a-past-round)). The peer ranges are loose (`>=`) for that reason; package managers may warn that the fork prereleases don't satisfy them, which is harmless. Older forks (`algosdk` 3.8.0-dt.2, algokit-utils 9.2.3-dt.2) still work, but read through simulate only.
+The SDK detects the forks at runtime. With stock algosdk and algokit-utils it still reads the latest state, and reads at older rounds throw `TimeTravelUnavailableError` (see [Reading at a Past Round](#reading-at-a-past-round)). The peer ranges are loose (`>=`) for that reason; package managers may warn that the fork prereleases don't satisfy them, which is harmless. Only the forks above are supported: older ones read as stock (the latest state only), and so does a dtalgorand node from before `GET /v2/capabilities`.
 
 The algokit-utils fork declares Node.js 22+.
 
@@ -41,10 +41,10 @@ See [the repo README](https://github.com/d13co/reti-ghost-sdk/tree/dtalgorand#re
 | Feature | Needs |
 |---|---|
 | Reads at the latest round | any algod |
-| Reads at a past round, date lookup, series | a dtalgorand node with time travel (`GET /v2/transactions/simulate/limits` reports `time-travel: true`) |
+| Reads at a past round, date lookup, series | a dtalgorand node with time travel (`GET /v2/capabilities` reports `time-travel: true`) |
 | Change timeline | a dtalgorand node (`/versions` endpoints) |
-| Pool algod version history | a dtalgorand node with versions key filters (`key=` on `…/versions`), and the forks at algosdk 3.9.0-dt.3.0.0.1 / algokit-utils 9.2.3-dt.3.0.0.1 or later |
-| Faster reads (queries) | a dtalgorand node with queries (`…/simulate/limits` reports a `query` object); without it the same reads go through simulate |
+| Pool algod version history | a dtalgorand node with versions key filters (`key=` on `…/versions`), and the forks |
+| Faster reads (queries) | a dtalgorand node with queries (`GET /v2/capabilities` reports a `query` object); without it the same reads go through the extended simulate |
 
 `sdk.getNode()` reports what was detected, the node's simulate limits, and `query` (the query limits) when reads go through queries; `sdk.supportsTimeTravel()` answers the main question, and `sdk.getMaxRounds()` how many rounds one simulate request covers. `sdk.prefetch()` fetches what the first reads wait for (the node's limits, the registry's creation round, and suggested params on a node without queries), so an app can start it early.
 
@@ -88,7 +88,7 @@ Every read takes a trailing `{ round }`, or pin a round for all reads with `sdk.
 
 Every read also takes a `signal` (an `AbortSignal`): `{ round, signal }` for reads, the options object for `roundAt`, `timestampOf`, `firstRoundAtOrAfter`, `getTimestampsAtRounds`, `getChangeRounds` and the series methods. On abort the read rejects with the signal's reason (a `DOMException` named `AbortError` by default), on any backend, and a series rejects as a whole rather than returning failed points.
 
-- With the dtalgorand fork of algokit-utils 9.2.3-dt.2 or later, the read's HTTP requests are cancelled and not retried, queries and simulates alike. With an older one the read still rejects on abort, but its requests run to the end.
+- With the dtalgorand fork of algokit-utils, the read's HTTP requests are cancelled and not retried, queries and simulates alike. With stock algokit-utils the read still rejects on abort, but its requests run to the end.
 - Reads other calls share (node detection, the registry's creation round, the node's status, cached block headers) aren't cancelled: the aborted read stops waiting for them, and they carry on for the others.
 - On a stock node, `composer.simulate` can't pass the signal to fetch, so its simulate runs to the end; the read still rejects with the reason at once.
 - Past-round reads cost about the same as latest ones. Measured from Node.js on a local MainNet node, with queries / with the extended simulate: `getValidators` for all 227 validators 40–46 / 64–107 ms, `getValidatorConfig` 227 21–23 / 34–53 ms, `getPoolStates` for 286 pools 30–58 / 44–78 ms, `getStakerPositions` for 50 stakers 9–17 / 21–59 ms, `getBlockTimestamps(1000)` 10–39 / 12–65 ms, small reads (MBR, assets, 50 balances) 3–8 / 4–51 ms.
@@ -226,7 +226,7 @@ Ghost Mainnet App ID: 3374692547 **currently updatable by author.** It runs the 
 `new RetiGhostSDK({ algorand, registryAppId, round?, ghostAppId?, readerAccount?, backend?, ghostFee?, cacheParamsTimeout?, debug? })`
 
 - `readerAccount`: the account reads run as. Defaults to the network's fee sink, which is funded at every round. On simulate it must hold `ghostFee` at the round read; queries check no fees, so it needn't be funded there.
-- `backend`: `auto` (default) uses read-only queries when the forks and the node support them, else a dtalgorand node's extended simulate, else one simulate per group; `query` always queries (throws on a node without queries), `dt` always uses the extended simulate, `stock` one simulate per group, or your own ghostkit backend.
+- `backend`: `auto` (default) uses read-only queries when the forks and the node support them, else a dtalgorand node's extended simulate, else one simulate per group; `query` always queries (throws on stock algod and on a node with queries off), `dt` always uses the extended simulate (throws on stock algod), `stock` one simulate per group, or your own ghostkit backend.
 - `ghostFee`: what each simulated group may spend on fees (never charged). Default 10 Algo, enough for 10,000 inner calls. Simulate only: queries charge and check no fees.
 - `cacheParamsTimeout`: ms that latest-state reads reuse suggested params for (default 3,000).
 
@@ -236,7 +236,7 @@ Ghost Mainnet App ID: 3374692547 **currently updatable by author.** It runs the 
 - Chunking follows the node's simulate limits (`max-txn-groups`, `resource-limit-multiplier`) and the AVM's 256 inner transactions per group: `getValidators` takes 64 validators per group, the other validator reads 127 (a stock node allows 16 × 8 unnamed references per group, and the registry app takes one; at 256 per group, as before 0.3.0-dt.6, they failed on a stock node from validator 128 on); a dtalgorand node sends up to 16 groups per request. The chunks stay the same with queries, so a fallback to simulate needs no re-chunking; there each app call runs alone, with the node's per-call budget (`getNode().query.maxCallBudget`, 320,000 on the local MainNet node), and requests follow the query limits.
 - A query for a round past the node's tip (`firstRoundAtOrAfter` without `knownRound` near the tip, or `getTimestampsAtRounds` with future rounds) is answered through simulate instead, with the same result.
 - An asset or pool app that existed and was later destroyed or deleted can't be read at rounds after that; the simulate fails as "unavailable". Ids not created yet at a round are handled.
-- Retries come from algokit-utils' algod client. With the fork 9.2.3-dt.3 or later, a busy node's 503 is retried after at least 1 s; a 503 for history the node can't serve (e.g. untrusted history) and a 504 from a `/versions` listing (the node's time limit) are thrown at once, not after ~14 s of retries. On a 504 from `getChangeRounds` or another timeline read, narrow the range.
+- Retries come from algokit-utils' algod client. With the fork, a busy node's 503 is retried after at least 1 s; a 503 for history the node can't serve (e.g. untrusted history) and a 504 from a `/versions` listing (the node's time limit) are thrown at once, not after ~14 s of retries. On a 504 from `getChangeRounds` or another timeline read, narrow the range.
 
 
 ## Development
