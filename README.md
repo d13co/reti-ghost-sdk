@@ -10,14 +10,14 @@ Fast Reti SDK that utilizes [ghost contracts](https://github.com/d13co/ghostkit)
 
 Algorand's algod only serves the latest state, so a stock node can't answer "what did the registry look like at round R?". [dtalgorand](https://github.com/d13co/dt-algorand) is a fork of go-algorand that can: it simulates transactions as of a past round, and indexes when each box, account, app and asset changed. This branch builds the Reti SDK on top of it, so an app (the Reti UI's time travel) can render any page as of a past round, plus date → round lookups, change timelines and chart series.
 
-Doing that needs a fork at every layer under the SDK. None of them is published yet, so this branch carries them as tarballs in [`vendor/`](vendor/):
+Doing that needs a fork at every layer under the SDK. The algosdk and algokit-utils forks are on npm; ghostkit's dtalgorand build isn't published yet, so this branch carries it as a tarball in [`vendor/`](vendor/):
 
 | Layer | Fork | Version | Source | What it adds |
 |---|---|---|---|---|
 | Node | dtalgorand (go-algorand) | based on `v5.0.4-stable` | [d13co/dt-algorand](https://github.com/d13co/dt-algorand), branch `dtalgorand` (queries not merged yet) | Simulate at a past round; several groups, parallel groups and several rounds per simulate request; validity window modes; running a past round under a later protocol; `GET /v2/capabilities` (simulate and query limits, time travel); `/versions` change feeds for boxes, accounts, apps and assets; read-only TEAL queries (`POST /v2/query`) |
-| algosdk | `dtalgosdk` | `3.9.0-dt.4.1.0.0` | fork of [algorand/js-algorand-sdk](https://github.com/algorand/js-algorand-sdk), branch `dtalgorand` (query support on `dt-query` until merged) | `DTAlgodClient`: past-round reads (checked against the node's `X-Algod-TT-Round` header), box and app versions, the extended simulate, the node's capabilities, `DTAlgodClient.query`; versions as of rounds, changed keys and key/prefix filters, asset holders; a fix for decoding ABI values from byte views |
+| algosdk | `dt-algosdk` | `3.9.0-dt.4.1.0.0` | fork of [algorand/js-algorand-sdk](https://github.com/algorand/js-algorand-sdk), branch `dtalgorand` (query support on `dt-query` until merged) | `DTAlgodClient`: past-round reads (checked against the node's `X-Algod-TT-Round` header), box and app versions, the extended simulate, the node's capabilities, `DTAlgodClient.query`; versions as of rounds, changed keys and key/prefix filters, asset holders; a fix for decoding ABI values from byte views |
 | algokit-utils | `@d13co/dt-algokit-utils` | `9.2.3-dt.4.1.0.0` | fork of [algorandfoundation/algokit-utils-ts](https://github.com/algorandfoundation/algokit-utils-ts), branch `dtalgorand` (query support on `dt-query` until merged) | `algorand.dt`: detects a dtalgorand node and runs the composer's simulate through the extended simulate at a round, following the node's limits; `algorand.query`: runs composers' app calls as queries with a simulate fallback, chunked by the node's limits; request cancellation with an `AbortSignal`; versions iterators with key filters and rounds, asset holders; retries that skip what a retry can't fix |
-| ghostkit | `ghostkit` | `0.1.0-dt.4` | [d13co/ghostkit](https://github.com/d13co/ghostkit), branch `feat/dt` (query support on `dt-query` until merged) | Node detection from `GET /v2/capabilities` (one check tells a dtalgorand node from stock algod), a dtalgorand simulate backend, a query backend (the `auto` default when the node has queries), `prefetch()`, AVM 13, 4 KB app args, chunk tags that survive puya-ts, log decoding that copes with byte views, aborts that reject with the reason on every backend, `ghostkitChangeRounds`. Build time only: the generated SDK inlines its runtime |
+| ghostkit | `ghostkit` | `0.1.0-dt.5` | [d13co/ghostkit](https://github.com/d13co/ghostkit), branch `feat/dt` (query support on `dt-query` until merged) | Node detection from `GET /v2/capabilities` (one check tells a dtalgorand node from stock algod), a dtalgorand simulate backend, a query backend (the `auto` default when the node has queries), `prefetch()`, AVM 13, 4 KB app args, chunk tags that survive puya-ts, log decoding that copes with byte views, aborts that reject with the reason on every backend, `ghostkitChangeRounds`. Build time only: the generated SDK inlines its runtime |
 
 On top of those, this branch changes the SDK itself:
 
@@ -26,7 +26,7 @@ On top of those, this branch changes the SDK itself:
 
 It still works against any algod for the latest state. With stock algosdk and algokit-utils, or on a stock node, reads at older rounds throw `TimeTravelUnavailableError`.
 
-Workspace-wide `overrides` in [`pnpm-workspace.yaml`](pnpm-workspace.yaml) make every package here use the vendored algosdk and algokit-utils, so only one copy of each loads. A consumer needs the same; see the SDK README's Install section.
+Workspace-wide `overrides` in [`pnpm-workspace.yaml`](pnpm-workspace.yaml) make every package here use the forks of algosdk and algokit-utils from npm, so only one copy of each loads. A consumer needs the same; see the SDK README's Install section.
 
 ## Development Installation
 
@@ -49,9 +49,9 @@ algokit project run build
 ## Releasing a prerelease
 
 1. Bump `version` in `projects/sdk/package.json` to the next `0.3.0-dt.N`.
-2. If a fork changed, pack it, put the tarball in `vendor/`, and update `pnpm-workspace.yaml`, the `devDependencies` in `projects/contracts` and `projects/sdk`, the Install section of `projects/sdk/README.md`, and the table above.
+2. If a fork changed, update its exact version in `pnpm-workspace.yaml`, the `devDependencies` in `projects/contracts` and `projects/sdk`, the Install section of `projects/sdk/README.md`, and the table above. If ghostkit changed, pack it and put the tarball in `vendor/`.
 3. `algokit project run build`, and commit.
-4. Tag the commit `v0.3.0-dt.N` and push the branch and the tag. The SDK README's install snippet downloads the fork tarballs from that tag.
+4. Tag the commit `v0.3.0-dt.N` and push the branch and the tag.
 5. From `projects/sdk`: `pnpm publish --tag dt`, so `latest` stays on the stable line. `prepublishOnly` refuses to publish a prerelease as `latest`, then rebuilds `dist/`.
 
 ## Usage

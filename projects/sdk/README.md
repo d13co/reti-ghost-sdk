@@ -19,16 +19,22 @@ This is a prerelease line, published under the npm dist-tag `dt` (the stable SDK
 npm install reti-ghost-sdk@dt
 ```
 
-Reads at past rounds need the dtalgorand forks of algosdk and algokit-utils, which aren't on npm yet. Their tarballs are in this repo's [`vendor/`](https://github.com/d13co/reti-ghost-sdk/tree/dtalgorand/vendor) on the `dtalgorand` branch. The forks are packaged under their own names (`dtalgosdk`, `@d13co/dt-algokit-utils`) and installed under the stock names through overrides. Override both everywhere in your app, so that exactly one copy of each loads (your code, this SDK and any wallet library must share them):
+Reads at past rounds need the dtalgorand forks of algosdk and algokit-utils, `dt-algosdk` and `@d13co/dt-algokit-utils` on npm. Install both under the stock names, pinned exactly, and override them everywhere in your app, so that exactly one copy of each loads (your code, this SDK and any wallet library must share them):
 
-```yaml
-# pnpm: pnpm-workspace.yaml, or "pnpm": { "overrides": { ... } } in package.json
-overrides:
-  algosdk: https://raw.githubusercontent.com/d13co/reti-ghost-sdk/v0.3.0-dt.9/vendor/dtalgosdk-3.9.0-dt.4.1.0.0.tgz
-  '@algorandfoundation/algokit-utils': https://raw.githubusercontent.com/d13co/reti-ghost-sdk/v0.3.0-dt.9/vendor/d13co-dt-algokit-utils-9.2.3-dt.4.1.0.0.tgz
+```json
+{
+  "dependencies": {
+    "@algorandfoundation/algokit-utils": "npm:@d13co/dt-algokit-utils@9.2.3-dt.4.1.0.0",
+    "algosdk": "npm:dt-algosdk@3.9.0-dt.4.1.0.0"
+  },
+  "overrides": {
+    "@algorandfoundation/algokit-utils": "npm:@d13co/dt-algokit-utils@9.2.3-dt.4.1.0.0",
+    "algosdk": "npm:dt-algosdk@3.9.0-dt.4.1.0.0"
+  }
+}
 ```
 
-With npm, put the same two entries under `"overrides"` in `package.json`. If your app also depends on `algosdk` or `@algorandfoundation/algokit-utils` directly, npm rejects an override that conflicts with a direct dependency (`EOVERRIDE`): set the direct dependencies to the tarball URLs and make the overrides refer to them, `"overrides": { "algosdk": "$algosdk", "@algorandfoundation/algokit-utils": "$@algorandfoundation/algokit-utils" }`. You can also copy the tarballs into your repo and point at them with `file:`.
+With pnpm, put the same two entries under `overrides` in `pnpm-workspace.yaml` (or `pnpm.overrides` in `package.json`); with yarn, under `resolutions`. The forks' versions are prereleases, which `^` ranges don't match, so pin them exactly. Don't use `--legacy-peer-deps` or `--force` for a peer conflict: it means an override is missing, and those flags install a second, stock copy. `npm ls algosdk @algorandfoundation/algokit-utils` should show only the forks. See [Installing the fork](https://github.com/d13co/dt-algokit-utils-ts#installing-the-fork).
 
 The SDK detects the forks at runtime. With stock algosdk and algokit-utils it still reads the latest state, and reads at older rounds throw `TimeTravelUnavailableError` (see [Reading at a Past Round](#reading-at-a-past-round)). The peer ranges are loose (`>=`) for that reason; package managers may warn that the fork prereleases don't satisfy them, which is harmless. Only the forks above are supported: older ones read as stock (the latest state only), and so does a dtalgorand node from before `GET /v2/capabilities`.
 
