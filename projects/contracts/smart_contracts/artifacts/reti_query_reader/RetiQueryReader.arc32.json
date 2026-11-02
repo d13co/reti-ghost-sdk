@@ -1,0 +1,75 @@
+{
+    "hints": {
+        "getPoolStakers(uint64[])(uint64,uint64,(address,uint64,uint64,uint64,uint64))": {
+            "read_only": true,
+            "call_config": {
+                "no_op": "ALL"
+            },
+            "structs": {
+                "output": {
+                    "name": "PoolStakerEntry",
+                    "elements": [
+                        [
+                            "poolAppId",
+                            "uint64"
+                        ],
+                        [
+                            "slot",
+                            "uint64"
+                        ],
+                        [
+                            "info",
+                            "(address,uint64,uint64,uint64,uint64)"
+                        ]
+                    ]
+                }
+            }
+        }
+    },
+    "source": {
+        "approval": "I3ByYWdtYSB2ZXJzaW9uIDEzCiNwcmFnbWEgdHlwZXRyYWNrIGZhbHNlCiNwcmFnbWEgYXV0b3NhbHQgZmFsc2UKCi8vIEBhbGdvcmFuZGZvdW5kYXRpb24vYWxnb3JhbmQtdHlwZXNjcmlwdC9hcmM0L2luZGV4LmQudHM6OkNvbnRyYWN0LmFwcHJvdmFsUHJvZ3JhbSgpIC0+IHVpbnQ2NDoKbWFpbjoKICAgIGludGNibG9jayAwIDEgNjQgOAogICAgYnl0ZWNibG9jayAic3Rha2VycyIKICAgIC8vIHNtYXJ0X2NvbnRyYWN0cy9yZXRpX3F1ZXJ5X3JlYWRlci9jb250cmFjdC5hbGdvLnRzOjIwLTIxCiAgICAvLyBAY29udHJhY3QoeyBhdm1WZXJzaW9uOiAxMyB9KQogICAgLy8gZXhwb3J0IGNsYXNzIFJldGlRdWVyeVJlYWRlciBleHRlbmRzIENvbnRyYWN0IHsKICAgIHB1c2hieXRlcyAweGM4MTQ4ZGFjIC8vIG1ldGhvZCAiZ2V0UG9vbFN0YWtlcnModWludDY0W10pKHVpbnQ2NCx1aW50NjQsKGFkZHJlc3MsdWludDY0LHVpbnQ2NCx1aW50NjQsdWludDY0KSkiCiAgICB0eG5hIEFwcGxpY2F0aW9uQXJncyAwCiAgICBtYXRjaCBtYWluX2dldFBvb2xTdGFrZXJzX3JvdXRlQDIKICAgIGVycgoKbWFpbl9nZXRQb29sU3Rha2Vyc19yb3V0ZUAyOgogICAgLy8gc21hcnRfY29udHJhY3RzL3JldGlfcXVlcnlfcmVhZGVyL2NvbnRyYWN0LmFsZ28udHM6MjcKICAgIC8vIEBhYmltZXRob2QoeyByZWFkb25seTogdHJ1ZSwgb25DcmVhdGU6ICJhbGxvdyIgfSkKICAgIHR4biBPbkNvbXBsZXRpb24KICAgICEKICAgIGFzc2VydAogICAgYiBnZXRQb29sU3Rha2VycwoKCi8vIHNtYXJ0X2NvbnRyYWN0cy9yZXRpX3F1ZXJ5X3JlYWRlci9jb250cmFjdC5hbGdvLnRzOjpSZXRpUXVlcnlSZWFkZXIuZ2V0UG9vbFN0YWtlcnNbcm91dGluZ10oKSAtPiB2b2lkOgpnZXRQb29sU3Rha2VyczoKICAgIGludGNfMCAvLyAwCiAgICBwdXNoYnl0ZXMgIiIKICAgIGR1cG4gMgogICAgLy8gc21hcnRfY29udHJhY3RzL3JldGlfcXVlcnlfcmVhZGVyL2NvbnRyYWN0LmFsZ28udHM6MjcKICAgIC8vIEBhYmltZXRob2QoeyByZWFkb25seTogdHJ1ZSwgb25DcmVhdGU6ICJhbGxvdyIgfSkKICAgIHR4bmEgQXBwbGljYXRpb25BcmdzIDEKICAgIGR1cG4gMgogICAgaW50Y18wIC8vIDAKICAgIGV4dHJhY3RfdWludDE2IC8vIG9uIGVycm9yOiBpbnZhbGlkIGFycmF5IGxlbmd0aCBoZWFkZXIKICAgIGR1cAogICAgY292ZXIgMgogICAgaW50Y18zIC8vIDgKICAgICoKICAgIHB1c2hpbnQgMgogICAgKwogICAgc3dhcAogICAgbGVuCiAgICA9PQogICAgYXNzZXJ0IC8vIGludmFsaWQgbnVtYmVyIG9mIGJ5dGVzIGZvciBhcmM0LmR5bmFtaWNfYXJyYXk8dWludDY0PgogICAgaW50Y18wIC8vIDAKCmdldFBvb2xTdGFrZXJzX2Zvcl9oZWFkZXJAMjoKICAgIC8vIHNtYXJ0X2NvbnRyYWN0cy9yZXRpX3F1ZXJ5X3JlYWRlci9jb250cmFjdC5hbGdvLnRzOjMwCiAgICAvLyBmb3IgKGNvbnN0IHBvb2wgb2YgcG9vbHMpIHsKICAgIGR1cAogICAgZGlnIDIKICAgIDwKICAgIGJ6IGdldFBvb2xTdGFrZXJzX2FmdGVyX2ZvckAxOAogICAgZGlnIDIKICAgIGV4dHJhY3QgMiAwCiAgICBkaWcgMQogICAgaW50Y18zIC8vIDgKICAgICoKICAgIGV4dHJhY3RfdWludDY0CiAgICAvLyBzbWFydF9jb250cmFjdHMvcmV0aV9xdWVyeV9yZWFkZXIvY29udHJhY3QuYWxnby50czo1NQogICAgLy8gcmV0dXJuIFR4bi5hcHBsaWNhdGlvbklkLmlkID09PSAwICYmIGlkID49IEdsb2JhbC5jdXJyZW50QXBwbGljYXRpb25JZC5pZDsKICAgIHR4biBBcHBsaWNhdGlvbklECiAgICBibnogZ2V0UG9vbFN0YWtlcnNfYm9vbF9mYWxzZUAyMgogICAgZHVwCiAgICBnbG9iYWwgQ3VycmVudEFwcGxpY2F0aW9uSUQKICAgID49CiAgICBieiBnZXRQb29sU3Rha2Vyc19ib29sX2ZhbHNlQDIyCiAgICBpbnRjXzEgLy8gMQoKZ2V0UG9vbFN0YWtlcnNfYm9vbF9tZXJnZUAyMzoKICAgIC8vIHNtYXJ0X2NvbnRyYWN0cy9yZXRpX3F1ZXJ5X3JlYWRlci9jb250cmFjdC5hbGdvLnRzOjMxCiAgICAvLyBpZiAodGhpcy5ub3RDcmVhdGVkWWV0KHBvb2wpKSBjb250aW51ZTsKICAgIGJueiBnZXRQb29sU3Rha2Vyc19ibG9ja0AxNgogICAgLy8gc21hcnRfY29udHJhY3RzL3JldGlfcXVlcnlfcmVhZGVyL2NvbnRyYWN0LmFsZ28udHM6MzIKICAgIC8vIGNvbnN0IFssIGV4aXN0c10gPSBvcC5BcHBQYXJhbXMuYXBwQ3JlYXRvcihwb29sKTsKICAgIGR1cAogICAgYXBwX3BhcmFtc19nZXQgQXBwQ3JlYXRvcgogICAgYnVyeSAxCiAgICAvLyBzbWFydF9jb250cmFjdHMvcmV0aV9xdWVyeV9yZWFkZXIvY29udHJhY3QuYWxnby50czozMwogICAgLy8gaWYgKCFleGlzdHMpIGNvbnRpbnVlOwogICAgYnogZ2V0UG9vbFN0YWtlcnNfYmxvY2tAMTYKICAgIC8vIHNtYXJ0X2NvbnRyYWN0cy9yZXRpX3F1ZXJ5X3JlYWRlci9jb250cmFjdC5hbGdvLnRzOjM0CiAgICAvLyBjb25zdCBbbGVuZ3RoLCBoYXNCb3hdID0gb3AuQXBwQm94Lmxlbmd0aChwb29sLCBuYW1lKTsKICAgIGR1cAogICAgYnl0ZWNfMCAvLyAic3Rha2VycyIKICAgIGFwcF9ib3hfbGVuCiAgICBzd2FwCiAgICBidXJ5IDYKICAgIC8vIHNtYXJ0X2NvbnRyYWN0cy9yZXRpX3F1ZXJ5X3JlYWRlci9jb250cmFjdC5hbGdvLnRzOjM1CiAgICAvLyBpZiAoIWhhc0JveCkgY29udGludWU7CiAgICBieiBnZXRQb29sU3Rha2Vyc19ibG9ja0AxNgogICAgLy8gc21hcnRfY29udHJhY3RzL3JldGlfcXVlcnlfcmVhZGVyL2NvbnRyYWN0LmFsZ28udHM6MzYKICAgIC8vIGZvciAobGV0IGF0OiB1aW50NjQgPSAwOyBhdCArIFNUQUtFRF9JTkZPX0JZVEVTIDw9IGxlbmd0aDsgYXQgKz0gU1RBS0VEX0lORk9fQllURVMpIHsKICAgIGludGNfMCAvLyAwCiAgICBidXJ5IDcKCmdldFBvb2xTdGFrZXJzX3doaWxlX3RvcEAxMDoKICAgIC8vIHNtYXJ0X2NvbnRyYWN0cy9yZXRpX3F1ZXJ5X3JlYWRlci9jb250cmFjdC5hbGdvLnRzOjM2CiAgICAvLyBmb3IgKGxldCBhdDogdWludDY0ID0gMDsgYXQgKyBTVEFLRURfSU5GT19CWVRFUyA8PSBsZW5ndGg7IGF0ICs9IFNUQUtFRF9JTkZPX0JZVEVTKSB7CiAgICBkaWcgNgogICAgaW50Y18yIC8vIDY0CiAgICArCiAgICBkdXAKICAgIGJ1cnkgNwogICAgZGlnIDUKICAgIDw9CiAgICBieiBnZXRQb29sU3Rha2Vyc19ibG9ja0AxNgogICAgLy8gc21hcnRfY29udHJhY3RzL3JldGlfcXVlcnlfcmVhZGVyL2NvbnRyYWN0LmFsZ28udHM6MzcKICAgIC8vIGNvbnN0IGluZm8gPSBvcC5BcHBCb3guZXh0cmFjdChwb29sLCBuYW1lLCBhdCwgU1RBS0VEX0lORk9fQllURVMpOwogICAgZHVwCiAgICBieXRlY18wIC8vICJzdGFrZXJzIgogICAgZGlnIDgKICAgIGludGNfMiAvLyA2NAogICAgYXBwX2JveF9leHRyYWN0CiAgICBkdXAKICAgIGJ1cnkgOQogICAgLy8gc21hcnRfY29udHJhY3RzL3JldGlfcXVlcnlfcmVhZGVyL2NvbnRyYWN0LmFsZ28udHM6MzgKICAgIC8vIGlmIChvcC5leHRyYWN0KGluZm8sIDAsIDMyKSA9PT0gR2xvYmFsLnplcm9BZGRyZXNzLmJ5dGVzKSBjb250aW51ZTsKICAgIGV4dHJhY3QgMCAzMgogICAgZ2xvYmFsIFplcm9BZGRyZXNzCiAgICA9PQogICAgYm56IGdldFBvb2xTdGFrZXJzX2Jsb2NrQDE0CiAgICAvLyBzbWFydF9jb250cmFjdHMvcmV0aV9xdWVyeV9yZWFkZXIvY29udHJhY3QuYWxnby50czo0MAogICAgLy8gbG9nKG9wLml0b2IocG9vbCkuY29uY2F0KG9wLml0b2IoYXQgLyBTVEFLRURfSU5GT19CWVRFUykpLmNvbmNhdChpbmZvKSk7CiAgICBkdXAKICAgIGl0b2IKICAgIGRpZyA3CiAgICBpbnRjXzIgLy8gNjQKICAgIC8KICAgIGl0b2IKICAgIGNvbmNhdAogICAgZGlnIDgKICAgIGNvbmNhdAogICAgbG9nCgpnZXRQb29sU3Rha2Vyc19ibG9ja0AxNDoKICAgIGRpZyA1CiAgICBidXJ5IDcKICAgIGIgZ2V0UG9vbFN0YWtlcnNfd2hpbGVfdG9wQDEwCgpnZXRQb29sU3Rha2Vyc19ibG9ja0AxNjoKICAgIHBvcAogICAgaW50Y18xIC8vIDEKICAgICsKICAgIGIgZ2V0UG9vbFN0YWtlcnNfZm9yX2hlYWRlckAyCgpnZXRQb29sU3Rha2Vyc19ib29sX2ZhbHNlQDIyOgogICAgaW50Y18wIC8vIDAKICAgIGIgZ2V0UG9vbFN0YWtlcnNfYm9vbF9tZXJnZUAyMwoKZ2V0UG9vbFN0YWtlcnNfYWZ0ZXJfZm9yQDE4OgogICAgLy8gc21hcnRfY29udHJhY3RzL3JldGlfcXVlcnlfcmVhZGVyL2NvbnRyYWN0LmFsZ28udHM6MjcKICAgIC8vIEBhYmltZXRob2QoeyByZWFkb25seTogdHJ1ZSwgb25DcmVhdGU6ICJhbGxvdyIgfSkKICAgIHB1c2hieXRlcyBiYXNlMzIoQ1VQWFk1SUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBKQogICAgbG9nCiAgICBpbnRjXzEgLy8gMQogICAgcmV0dXJuCg==",
+        "clear": "I3ByYWdtYSB2ZXJzaW9uIDEzCiNwcmFnbWEgdHlwZXRyYWNrIGZhbHNlCiNwcmFnbWEgYXV0b3NhbHQgZmFsc2UKCi8vIEBhbGdvcmFuZGZvdW5kYXRpb24vYWxnb3JhbmQtdHlwZXNjcmlwdC9iYXNlLWNvbnRyYWN0LmQudHM6OkJhc2VDb250cmFjdC5jbGVhclN0YXRlUHJvZ3JhbSgpIC0+IHVpbnQ2NDoKbWFpbjoKICAgIHB1c2hpbnQgMQogICAgcmV0dXJuCg=="
+    },
+    "state": {
+        "global": {
+            "num_byte_slices": 0,
+            "num_uints": 0
+        },
+        "local": {
+            "num_byte_slices": 0,
+            "num_uints": 0
+        }
+    },
+    "schema": {
+        "global": {
+            "declared": {},
+            "reserved": {}
+        },
+        "local": {
+            "declared": {},
+            "reserved": {}
+        }
+    },
+    "contract": {
+        "name": "RetiQueryReader",
+        "desc": "RetiQueryReader: the reads only a dtalgorand node's read-only queries (`POST /v2/query`) can make. Queries may read any\napp's boxes (AVM 13's `app_box_*` opcodes, as if every app had set `ForeignBoxReads`), which simulate refuses, so this\nreader never simulates: on a node without queries the SDK reads the same state another way.",
+        "methods": [
+            {
+                "name": "getPoolStakers",
+                "args": [
+                    {
+                        "type": "uint64[]",
+                        "name": "pools"
+                    }
+                ],
+                "readonly": true,
+                "returns": {
+                    "type": "(uint64,uint64,(address,uint64,uint64,uint64,uint64))"
+                },
+                "desc": "Every filled slot of each pool's `stakers` box, pools in order and slots in box order. A pool that doesn't exist\n(or didn't yet), or has no `stakers` box, logs nothing. Four full pools (200 stakers each, 80 bytes a slot) fill one\ncall's 64 KB of logs. `@ghostkit-chunk pools refsPerItem=1 maxPerTxn=4`"
+            }
+        ],
+        "networks": {}
+    },
+    "bare_call_config": {}
+}

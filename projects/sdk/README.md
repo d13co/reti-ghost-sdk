@@ -51,6 +51,7 @@ See [the repo README](https://github.com/d13co/reti-ghost-sdk/tree/dtalgorand#re
 | Change timeline | a dtalgorand node (`/versions` endpoints) |
 | Pool algod version history | a dtalgorand node with versions key filters (`key=` on `…/versions`), and the forks |
 | Faster reads (queries) | a dtalgorand node with queries (`GET /v2/capabilities` reports a `query` object); without it the same reads go through the extended simulate |
+| Batched staker lists (`getPoolStakers`, `getPoolsStakers`) | a dtalgorand node with queries, which read other apps' boxes (AVM 13); without it, one REST box read per pool |
 
 `sdk.getNode()` reports what was detected, the node's simulate limits, and `query` (the query limits) when reads go through queries; `sdk.supportsTimeTravel()` answers the main question, and `sdk.getMaxRounds()` how many rounds one simulate request covers. `sdk.prefetch()` fetches what the first reads wait for (the node's limits, the registry's creation round, the node's latest round, and suggested params on a node without queries), so an app can start it early. On a time-travel node, a read at or below the latest round seen needs no status read, so after `prefetch` a past-round read is one request.
 
@@ -123,7 +124,8 @@ All methods are read-only, take an optional trailing `{ round }`, and return res
 - `getPoolTotals(poolAppIds)`: `{ poolAppId, numStakers, staked }`, made for charts.
 - `getPoolBalancesAndLastPayouts(poolAppIds)`, `getPoolAlgodVersions(poolAppIds)`.
 - `getPoolAlgodVersionChanges(poolAppId)`: every change of the pool's reported algod version; see [Node upgrades](#node-upgrades).
-- `getPoolStakers(poolAppId)`: the pool's `stakers` box (one REST read), empty slots left out.
+- `getPoolStakers(poolAppId)`: the pool's `stakers` box, empty slots left out (each entry keeps its `slot`); empty if the pool or its box doesn't exist. Calls made within `batchWindowMs` of each other at the same round are read together: on a node with queries as one query through the AVM 13 query reader (`RetiQueryReader`, four pools per app call), so a page that reads each pool on its own sends one request per round; elsewhere, and if the query fails, with one REST box read per pool, 8 at a time.
+- `getPoolsStakers(poolAppIds)`: each pool's stakers, in input order: one query on a node with queries (286 MainNet pools in one request), else one REST box read per pool, 8 at a time.
 
 ### Stakers and accounts
 
@@ -221,19 +223,20 @@ The building blocks are exported for apps that read differently: `stakerMembersh
 
 ## Ghost vs Deployed Reader
 
-By default, calls run against a ghost (non-deployed) reader contract, through queries or simulate. For latest-state reads you can call a deployed reader instead by passing `ghostAppId`. Reads at a past round always use the ghost.
+By default, calls run against a ghost (non-deployed) reader contract, through queries or simulate. The staker lists come from a second ghost, `RetiQueryReader` (AVM 13), which reads the pools' `stakers` boxes with `app_box_extract`: queries allow that for any app, simulate doesn't, so it only runs through queries and is never deployed. For latest-state reads you can call a deployed reader instead by passing `ghostAppId`. Reads at a past round always use the ghost.
 
 Ghost Mainnet App ID: 3374692547 **currently updatable by author.** It runs the 0.2.0 reader, which lacks the methods added in 0.3.0, so deploy the new reader before pointing `ghostAppId` at it.
 
 
 ## Options
 
-`new RetiGhostSDK({ algorand, registryAppId, round?, ghostAppId?, readerAccount?, backend?, ghostFee?, cacheParamsTimeout?, debug? })`
+`new RetiGhostSDK({ algorand, registryAppId, round?, ghostAppId?, readerAccount?, backend?, ghostFee?, cacheParamsTimeout?, debug?, batchWindowMs? })`
 
 - `readerAccount`: the account reads run as. Defaults to the network's fee sink, which is funded at every round. On simulate it must hold `ghostFee` at the round read; queries check no fees, so it needn't be funded there.
 - `backend`: `auto` (default) uses read-only queries when the forks and the node support them, else a dtalgorand node's extended simulate, else one simulate per group; `query` always queries (throws on stock algod and on a node with queries off), `dt` always uses the extended simulate (throws on stock algod), `stock` one simulate per group, or your own ghostkit backend.
 - `ghostFee`: what each simulated group may spend on fees (never charged). Default 10 Algo, enough for 10,000 inner calls. Simulate only: queries charge and check no fees.
 - `cacheParamsTimeout`: ms that latest-state reads reuse suggested params for (default 3,000).
+- `batchWindowMs`: how long `getPoolStakers` waits for other calls at the same round to be read with it (default 10 ms).
 
 
 ## Limits and Known Issues
@@ -246,8 +249,8 @@ Ghost Mainnet App ID: 3374692547 **currently updatable by author.** It runs the 
 
 ## Development
 
-- Tests: `pnpm test` (vitest, `test/`): the staker history search against a simulated pool ledger, the leave payout batch, timeline targets, and the algod version history mapping.
-- Build: `algokit project run build` at the repo root, or `pnpm --filter smart_contracts build && pnpm --filter reti-ghost-sdk build`. The SDK build copies the generated reader client from the contracts project into `src/generated/`.
+- Tests: `pnpm test` (vitest, `test/`): the staker history search against a simulated pool ledger, the leave payout batch, timeline targets, the algod version history mapping, and the staker-list batcher.
+- Build: `algokit project run build` at the repo root, or `pnpm --filter smart_contracts build && pnpm --filter reti-ghost-sdk build`. The SDK build copies the generated reader clients (`RetiReader`, and the AVM 13 `RetiQueryReader`, compiled with puya-ts 1.3) from the contracts project into `src/generated/`.
 - Examples (`examples/`, run with `npx tsx`; point `DT_ALGOD_SERVER` at a dtalgorand MainNet node, and set `DT_ALGOD_TOKEN` if it needs one):
   - `at-round.ts [round|latest]`: everything the UI reads, at a round
   - `date-to-round.ts [date]`, `timeline.ts [validatorId]`, `series.ts [points]`
@@ -255,6 +258,7 @@ Ghost Mainnet App ID: 3374692547 **currently updatable by author.** It runs the 
   - `pool-upgrades.ts [poolAppId]`: a pool's algod version changes, the latest read back at its round
   - `abort.ts`: aborting reads (series, pinned reads, `roundAt` between probes, shared header reads, the stock backend). Last run: all 13 pass, on a local MainNet node with queries and on one without.
   - `verify.ts [points]`: cross-checks the SDK's reads with REST reads at the same rounds (validator boxes byte for byte, pool global state and balances, staker positions and balances) over the registry's life. Last run: 255 rounds through queries, 32 through the extended simulate, all match.
+  - `pool-stakers.ts [rounds]`: every pool's stakers through the query reader and through REST box reads, at the latest round and rounds over the registry's life, compared; also that separate `getPoolStakers` calls coalesce, with and without queries, and aborts. Last run: 129 to 286 pools per round in one query each, all equal to the REST reads; all 11 checks pass.
   - `query-vs-simulate.ts [points]`: the same reads through queries and through the extended simulate, every value compared, with timings and the requests each sent; on a node without queries, checks that reads fall back to simulate. Last run: all 74 checks pass with queries, 73 on the fallback.
 
 

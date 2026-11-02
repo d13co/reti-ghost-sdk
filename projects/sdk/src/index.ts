@@ -18,6 +18,8 @@ import {
   type ValidatorPoolInfo,
   type ValidatorTotals,
 } from "./generated/RetiReaderSDK.js"
+import { RetiQueryReaderSDK } from "./generated/RetiQueryReaderSDK.js"
+import { RoundBatcher } from "./utils/batcher.js"
 import { bytesToBigInt, decodeStakersBox, type PoolStaker } from "./decode.js"
 import { abortable, raceAbort, sim, simOptions } from "./abort.js"
 import { FutureRoundError, isDTUnsupported, requireDT, RetiNotDeployedError, TimeTravelUnavailableError } from "./errors.js"
@@ -200,6 +202,11 @@ export type RetiGhostSDKParams = {
   cacheParamsTimeout?: number
   /** Log each query or simulate */
   debug?: boolean
+  /**
+   * How long `getPoolStakers` waits for other calls at the same round to be read with it (default 10 ms): on a node
+   * with queries, a page that reads each pool's stakers on its own sends one request per round.
+   */
+  batchWindowMs?: number
 }
 
 /** The default `ghostFee`: 10 Algo per group (simulate only). */
@@ -230,6 +237,9 @@ const ALL_VALIDATORS_MIN_GUESS = 256
 /** How many validators past the most seen `getAllValidators` reads, for those added since. */
 const ALL_VALIDATORS_HEADROOM = 16
 
+/** How many pools' `stakers` boxes are read at once without queries, one request each. */
+const REST_STAKERS_CONCURRENCY = 8
+
 const roundUpTo = (n: number, step: number) => Math.ceil(n / step) * step
 
 /**
@@ -249,6 +259,11 @@ export class RetiGhostSDK {
   public readonly baseSDK: RetiReaderSDK
   /** Round ↔ timestamp lookups, from block headers. */
   public readonly clock: RoundClock
+  /**
+   * The AVM 13 reader for reads only queries can make (other apps' boxes). It never simulates: it's only called on a
+   * node whose reads go through queries.
+   */
+  public readonly queryGhost: RetiQueryReaderSDK
 
   /** State shared with the SDKs `atRound` returns. */
   private shared: {
@@ -258,6 +273,8 @@ export class RetiGhostSDK {
     statusRead?: Promise<bigint>
     /** The most validators any read has seen: `getAllValidators` reads this many (and some) in its first request. */
     validatorCount?: number
+    /** `getPoolStakers` calls made around the same time, by round, read in one query */
+    stakers: RoundBatcher<bigint, PoolStaker[]>
   }
 
   constructor({
@@ -270,6 +287,7 @@ export class RetiGhostSDK {
     ghostFee = DEFAULT_GHOST_FEE,
     cacheParamsTimeout,
     debug,
+    batchWindowMs = 10,
   }: RetiGhostSDKParams) {
     this.algorand = algorand
     this.registryAppId = BigInt(registryAppId)
@@ -278,7 +296,8 @@ export class RetiGhostSDK {
     this.ghost = new RetiReaderSDK(params)
     this.baseSDK = ghostAppId ? new RetiReaderSDK({ ...params, ghostAppId }) : this.ghost
     this.clock = new RoundClock(algorand)
-    this.shared = {}
+    this.queryGhost = new RetiQueryReaderSDK({ ...params, backend: "query" })
+    this.shared = { stakers: new RoundBatcher((pools, round, signal) => this.readPoolStakers(pools, round, signal), batchWindowMs) }
   }
 
   /** The same SDK with every read as of the end of `round`; `undefined` reads the latest state. */
@@ -521,24 +540,26 @@ export class RetiGhostSDK {
   }
 
   /**
-   * The stakers of a pool, from its `stakers` box (one REST read). Empty slots are left out; each entry keeps its slot.
-   * An empty list if the pool or its box doesn't exist at the round.
+   * A pool's stakers, from its `stakers` box: the filled slots in box order, empty if the pool or its box doesn't exist.
+   * Calls made within `batchWindowMs` of each other at the same round are read together: on a node with queries in one
+   * query (four pools per app call), elsewhere with one REST box read per pool, 8 at a time.
    */
   async getPoolStakers(poolAppId: number | bigint, options: ReadOptions = {}): Promise<PoolStaker[]> {
     const round = await this.roundFor(options)
-    const { signal } = options
-    try {
-      const box = await this.algorand.app.getBoxValue(BigInt(poolAppId), "stakers", {
-        ...(round !== undefined ? { round } : {}),
-        ...(signal ? { signal } : {}),
-      })
-      return decodeStakersBox(box)
-    } catch (e) {
-      signal?.throwIfAborted()
-      if ((e as { status?: number })?.status === 404 || /not found|does not exist/i.test(String((e as Error)?.message))) return []
-      throw e
-    }
+    return this.shared.stakers.load(BigInt(poolAppId), round, options.signal)
   }
+
+  /**
+   * Each pool's stakers, in input order (see `getPoolStakers`): one query on a node with queries, else one REST box
+   * read per pool.
+   */
+  async getPoolsStakers(poolAppIds: (number | bigint)[], options: ReadOptions = {}): Promise<PoolStaker[][]> {
+    const round = await this.roundFor(options)
+    const pools = [...new Set(poolAppIds.map(BigInt))]
+    const byPool = await this.readPoolStakers(pools, round, options.signal)
+    return poolAppIds.map((id) => byPool.get(BigInt(id)) ?? [])
+  }
+
 
   // ---------------------------------------------------------------------------------------------------------------
   // Stakers and accounts
@@ -1086,6 +1107,67 @@ export class RetiGhostSDK {
       this.shared.statusRead = read
     }
     return this.shared.statusRead
+  }
+
+  /**
+   * Whether reads may go through queries, so the query reader can read other apps' boxes: a node with queries, and a
+   * backend that queries (`auto` or `query`, not a forced `dt` or `stock`).
+   */
+  private async queriesBoxes(signal?: AbortSignal): Promise<boolean> {
+    const { backend } = this.ghost
+    const queries = backend === "auto" || backend === "query" || (typeof backend === "object" && backend.name === "query")
+    if (!queries) return false
+    const node = await raceAbort(this.getNode(), signal)
+    return node.kind === "dt" && node.query !== undefined
+  }
+
+  /**
+   * Pools' stakers at a planned round: one query through the query reader where the node has queries, falling back to
+   * REST box reads if the query fails; one REST read per pool elsewhere.
+   */
+  private async readPoolStakers(pools: bigint[], round: bigint | undefined, signal?: AbortSignal): Promise<Map<bigint, PoolStaker[]>> {
+    if (pools.length > 0 && (await this.queriesBoxes(signal))) {
+      try {
+        return await this.queryPoolStakers(pools, round, signal)
+      } catch (e) {
+        signal?.throwIfAborted()
+        if (this.ghost.debug) console.warn(`[reti-ghost-sdk] stakers query failed (${(e as Error)?.message}); reading the boxes one by one`)
+      }
+    }
+    const lists = await pMap(pools, (pool) => this.restPoolStakers(pool, round, signal), { concurrency: REST_STAKERS_CONCURRENCY })
+    return new Map(pools.map((pool, i) => [pool, lists[i]]))
+  }
+
+  private async queryPoolStakers(pools: bigint[], round: bigint | undefined, signal?: AbortSignal): Promise<Map<bigint, PoolStaker[]>> {
+    const reader = round === undefined ? this.queryGhost : this.queryGhost.atRound(round)
+    const entries = await abortable(signal, () => reader.getPoolStakers({ methodArgsOrArgsArray: { pools }, ...sim({ signal }) }))
+    const byPool = new Map<bigint, PoolStaker[]>(pools.map((pool) => [pool, []]))
+    for (const { poolAppId, slot, info } of entries) {
+      byPool.get(poolAppId)?.push({
+        slot: Number(slot),
+        account: info.account,
+        balance: info.balance,
+        totalRewarded: info.totalRewarded,
+        rewardTokenBalance: info.rewardTokenBalance,
+        entryRound: info.entryRound,
+      })
+    }
+    return byPool
+  }
+
+  /** A pool's `stakers` box by REST, decoded; empty if the pool or the box doesn't exist. */
+  private async restPoolStakers(poolAppId: bigint, round: bigint | undefined, signal?: AbortSignal): Promise<PoolStaker[]> {
+    try {
+      const box = await this.algorand.app.getBoxValue(poolAppId, "stakers", {
+        ...(round !== undefined ? { round } : {}),
+        ...(signal ? { signal } : {}),
+      })
+      return decodeStakersBox(box)
+    } catch (e) {
+      signal?.throwIfAborted()
+      if ((e as { status?: number })?.status === 404 || /not found|does not exist/i.test(String((e as Error)?.message))) return []
+      throw e
+    }
   }
 
   /** The reader for a read: the latest-state reader, or the ghost pinned at the read's round. */

@@ -1,6 +1,6 @@
 {
   "name": "reti-ghost-sdk",
-  "version": "0.3.0-dt.11",
+  "version": "0.3.0-dt.12",
   "description": "Read-only SDK for the Reti staking registry, with reads at any past round on a dtalgorand node, through read-only queries when the node has them",
   "repository": {
     "type": "git",
@@ -34,7 +34,7 @@
     "tag": "dt"
   },
   "scripts": {
-    "prebuild": "cp ../contracts/smart_contracts/artifacts/reti_reader/RetiReaderSDK.ts src/generated && node scripts/strip-app-spec-source.mjs src/generated/RetiReaderSDK.ts",
+    "prebuild": "cp ../contracts/smart_contracts/artifacts/reti_reader/RetiReaderSDK.ts ../contracts/smart_contracts/artifacts/reti_query_reader/RetiQueryReaderSDK.ts src/generated && node scripts/strip-app-spec-source.mjs src/generated/RetiReaderSDK.ts && node scripts/strip-app-spec-source.mjs src/generated/RetiQueryReaderSDK.ts",
     "clean": "rm -rf dist",
     "build": "pnpm run clean && pnpm run build:esm && pnpm run build:cjs && pnpm run build:dist-pkg",
     "build:esm": "tsc -p tsconfig.esm.json",

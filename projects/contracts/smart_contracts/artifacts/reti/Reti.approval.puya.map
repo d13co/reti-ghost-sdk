@@ -3,7 +3,7 @@
   "sources": [
     "../../reti/contract.algo.ts"
   ],
-  "mappings": ";;;;AAQA;;AAAA;;;AAAA;;AAAA;AAAA;AAAA;;AAAA;AAAA;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;AAAA;;;AAAA;;;;;;;;;;;;;;;;AAAA;AA4BI;AALA;AAvBJ;;AAAA;AAAA;;AAAA;AAAA;AAAA;AAAA;;AAAA;AACG;;;AAAA;AAAA;AAAA;AAAA;AAEC;AAGD;;;AAAA;AAAA;AAAA;AAAA;AAEC;AAGD;;;AAAA;AAAA;AAAA;AAAA;AAEC;AAGD;;;AAAA;AAAA;AAAA;AAAA;AAEC;AAaD;;;AAAA;AAAA;;AAAA;AAAA;AAEC",
+  "mappings": ";;;;AAQA;;AAAA;;;AAAA;;AAAA;AAAA;AAAA;;AAAA;AAAA;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;AAAA;;;AAAA;;;;;;;;;;;;;;;;AAAA;AA4BI;AALA;AAvBJ;;AAAA;AAAA;;AAAA;AAAA;AAAA;AACG;;;AAAA;AAAA;AAAA;AAAA;AAEC;AAGD;;;AAAA;AAAA;AAAA;AAAA;AAEC;AAGD;;;AAAA;AAAA;AAAA;AAAA;AAEC;AAGD;;;AAAA;AAAA;AAAA;AAAA;AAEC;AAaD;;;AAAA;AAAA;;AAAA;AAAA;AAEC",
   "op_pc_offset": 0,
   "pc_events": {
     "1": {
@@ -45,8 +45,7 @@
       ]
     },
     "12": {
-      "error": "OnCompletion must be NoOp",
-      "op": "assert // OnCompletion must be NoOp",
+      "op": "assert",
       "stack_out": []
     },
     "13": {
@@ -177,24 +176,11 @@
       ]
     },
     "82": {
-      "error": "OnCompletion must be NoOp && can only call when creating",
-      "op": "assert // OnCompletion must be NoOp && can only call when creating",
+      "op": "return",
+      "defined_out": [],
       "stack_out": []
     },
     "83": {
-      "op": "pushint 1 // 1",
-      "defined_out": [
-        "1"
-      ],
-      "stack_out": [
-        "1"
-      ]
-    },
-    "85": {
-      "op": "return",
-      "stack_out": []
-    },
-    "86": {
       "subroutine": "smart_contracts/reti/contract.algo.ts::Reti.getValidatorConfig[routing]",
       "params": {},
       "block": "getValidatorConfig",
@@ -207,7 +193,7 @@
         "tmp%0#0"
       ]
     },
-    "89": {
+    "86": {
       "op": "len",
       "defined_out": [
         "len%0#0"
@@ -216,7 +202,7 @@
         "len%0#0"
       ]
     },
-    "90": {
+    "87": {
       "op": "intc_0 // 8",
       "defined_out": [
         "8",
@@ -227,7 +213,7 @@
         "8"
       ]
     },
-    "91": {
+    "88": {
       "op": "==",
       "defined_out": [
         "eq%0#0"
@@ -236,16 +222,16 @@
         "eq%0#0"
       ]
     },
-    "92": {
+    "89": {
       "error": "invalid number of bytes for arc4.uint64",
       "op": "assert // invalid number of bytes for arc4.uint64",
       "stack_out": []
     },
-    "93": {
+    "90": {
       "error": "stub",
       "op": "err // stub"
     },
-    "94": {
+    "91": {
       "subroutine": "smart_contracts/reti/contract.algo.ts::Reti.getValidatorState[routing]",
       "params": {},
       "block": "getValidatorState",
@@ -258,7 +244,7 @@
         "tmp%0#0"
       ]
     },
-    "97": {
+    "94": {
       "op": "len",
       "defined_out": [
         "len%0#0"
@@ -267,7 +253,7 @@
         "len%0#0"
       ]
     },
-    "98": {
+    "95": {
       "op": "intc_0 // 8",
       "defined_out": [
         "8",
@@ -278,7 +264,7 @@
         "8"
       ]
     },
-    "99": {
+    "96": {
       "op": "==",
       "defined_out": [
         "eq%0#0"
@@ -287,16 +273,16 @@
         "eq%0#0"
       ]
     },
-    "100": {
+    "97": {
       "error": "invalid number of bytes for arc4.uint64",
       "op": "assert // invalid number of bytes for arc4.uint64",
       "stack_out": []
     },
-    "101": {
+    "98": {
       "error": "stub",
       "op": "err // stub"
     },
-    "102": {
+    "99": {
       "subroutine": "smart_contracts/reti/contract.algo.ts::Reti.getPools[routing]",
       "params": {},
       "block": "getPools",
@@ -309,7 +295,7 @@
         "tmp%0#0"
       ]
     },
-    "105": {
+    "102": {
       "op": "len",
       "defined_out": [
         "len%0#0"
@@ -318,7 +304,7 @@
         "len%0#0"
       ]
     },
-    "106": {
+    "103": {
       "op": "intc_0 // 8",
       "defined_out": [
         "8",
@@ -329,7 +315,7 @@
         "8"
       ]
     },
-    "107": {
+    "104": {
       "op": "==",
       "defined_out": [
         "eq%0#0"
@@ -338,16 +324,16 @@
         "eq%0#0"
       ]
     },
-    "108": {
+    "105": {
       "error": "invalid number of bytes for arc4.uint64",
       "op": "assert // invalid number of bytes for arc4.uint64",
       "stack_out": []
     },
-    "109": {
+    "106": {
       "error": "stub",
       "op": "err // stub"
     },
-    "110": {
+    "107": {
       "subroutine": "smart_contracts/reti/contract.algo.ts::Reti.getNodePoolAssignments[routing]",
       "params": {},
       "block": "getNodePoolAssignments",
@@ -360,7 +346,7 @@
         "tmp%0#0"
       ]
     },
-    "113": {
+    "110": {
       "op": "len",
       "defined_out": [
         "len%0#0"
@@ -369,7 +355,7 @@
         "len%0#0"
       ]
     },
-    "114": {
+    "111": {
       "op": "intc_0 // 8",
       "defined_out": [
         "8",
@@ -380,7 +366,7 @@
         "8"
       ]
     },
-    "115": {
+    "112": {
       "op": "==",
       "defined_out": [
         "eq%0#0"
@@ -389,16 +375,16 @@
         "eq%0#0"
       ]
     },
-    "116": {
+    "113": {
       "error": "invalid number of bytes for arc4.uint64",
       "op": "assert // invalid number of bytes for arc4.uint64",
       "stack_out": []
     },
-    "117": {
+    "114": {
       "error": "stub",
       "op": "err // stub"
     },
-    "118": {
+    "115": {
       "subroutine": "smart_contracts/reti/contract.algo.ts::Reti.getStakedPoolsForAccount[routing]",
       "params": {},
       "block": "getStakedPoolsForAccount",
@@ -411,7 +397,7 @@
         "staker#0"
       ]
     },
-    "121": {
+    "118": {
       "op": "len",
       "defined_out": [
         "len%0#0"
@@ -420,8 +406,8 @@
         "len%0#0"
       ]
     },
-    "122": {
-      "op": "pushint 32 // 32",
+    "119": {
+      "op": "pushint 32",
       "defined_out": [
         "32",
         "len%0#0"
@@ -431,7 +417,7 @@
         "32"
       ]
     },
-    "124": {
+    "121": {
       "op": "==",
       "defined_out": [
         "eq%0#0"
@@ -440,12 +426,12 @@
         "eq%0#0"
       ]
     },
-    "125": {
+    "122": {
       "error": "invalid number of bytes for arc4.static_array<arc4.uint8, 32>",
       "op": "assert // invalid number of bytes for arc4.static_array<arc4.uint8, 32>",
       "stack_out": []
     },
-    "126": {
+    "123": {
       "error": "stub",
       "op": "err // stub"
     }

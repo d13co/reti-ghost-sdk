@@ -1,0 +1,1593 @@
+{
+  "version": 3,
+  "sources": [
+    "../../reti_query_reader/contract.algo.ts"
+  ],
+  "mappings": ";;;;;;;;;;;;;;;;;AAmBA;;;;;;AAAA;;;AAAA;;;;AAAA;AAOG;;AAAA;AAAA;AAAA;;;;;;;AAAA;;;AAAA;;AAAA;AAAA;AAAA;AAAA;;AAAA;AAAA;AAAA;;AAAA;AAAA;AAAA;AAAA;AAAA;;AAGC;AAAA;;AAAA;AAAA;;;AAAA;;AAAA;;;AAAA;;AAAA;AAAA;AAAA;AAyBO;;AAAA;;;AAA8B;AAAM;;AAAN;AAA9B;;;;AAxBL;;;AACmB;AAAA;;AAAA;;AACf;;AACqB;AAAuB;AAAvB;;AAAA;AAAA;;AACrB;;AACkB;AAAb;;AAAgB;;AAAK;AAAL;AAAA;AAAA;;AAAA;;AAAA;AAAzB;;AACe;AAAwB;AAAxB;;AAAkC;AAAlC;;AAAA;AAAA;;AACT;;;AAA4B;;AAA5B;AAAJ;;AAEI;AAAA;AAA6B;;AAAK;AAAL;AAAR;AAArB;AAAA;;AAAA;AAAJ;;;;;;;;;;;;;;;;;AAbL;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA",
+  "op_pc_offset": 0,
+  "pc_events": {
+    "1": {
+      "subroutine": "@algorandfoundation/algorand-typescript/arc4/index.d.ts::Contract.approvalProgram",
+      "params": {},
+      "block": "main",
+      "stack_in": [],
+      "op": "intcblock 0 1 64 8"
+    },
+    "7": {
+      "op": "bytecblock \"stakers\""
+    },
+    "17": {
+      "op": "pushbytes 0xc8148dac // method \"getPoolStakers(uint64[])(uint64,uint64,(address,uint64,uint64,uint64,uint64))\"",
+      "defined_out": [
+        "Method(getPoolStakers(uint64[])(uint64,uint64,(address,uint64,uint64,uint64,uint64)))"
+      ],
+      "stack_out": [
+        "Method(getPoolStakers(uint64[])(uint64,uint64,(address,uint64,uint64,uint64,uint64)))"
+      ]
+    },
+    "23": {
+      "op": "txna ApplicationArgs 0",
+      "defined_out": [
+        "Method(getPoolStakers(uint64[])(uint64,uint64,(address,uint64,uint64,uint64,uint64)))",
+        "tmp%0#1"
+      ],
+      "stack_out": [
+        "Method(getPoolStakers(uint64[])(uint64,uint64,(address,uint64,uint64,uint64,uint64)))",
+        "tmp%0#1"
+      ]
+    },
+    "26": {
+      "op": "match main_getPoolStakers_route@2",
+      "stack_out": []
+    },
+    "30": {
+      "op": "err"
+    },
+    "31": {
+      "block": "main_getPoolStakers_route@2",
+      "stack_in": [],
+      "op": "txn OnCompletion",
+      "defined_out": [
+        "tmp%1#0"
+      ],
+      "stack_out": [
+        "tmp%1#0"
+      ]
+    },
+    "33": {
+      "op": "!",
+      "defined_out": [
+        "tmp%2#0"
+      ],
+      "stack_out": [
+        "tmp%2#0"
+      ]
+    },
+    "34": {
+      "op": "assert",
+      "stack_out": []
+    },
+    "35": {
+      "op": "b getPoolStakers"
+    },
+    "37": {
+      "subroutine": "smart_contracts/reti_query_reader/contract.algo.ts::RetiQueryReader.getPoolStakers[routing]",
+      "params": {},
+      "block": "getPoolStakers",
+      "stack_in": [],
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "info#0"
+      ]
+    },
+    "38": {
+      "op": "pushbytes \"\"",
+      "stack_out": [
+        "info#0",
+        "at#0"
+      ]
+    },
+    "40": {
+      "op": "dupn 2",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0"
+      ]
+    },
+    "42": {
+      "op": "txna ApplicationArgs 1"
+    },
+    "45": {
+      "op": "dupn 2",
+      "defined_out": [
+        "pools#0",
+        "pools#0 (copy)"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "pools#0",
+        "pools#0 (copy)"
+      ]
+    },
+    "47": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "pools#0",
+        "pools#0 (copy)",
+        "0"
+      ]
+    },
+    "48": {
+      "error": "invalid array length header",
+      "op": "extract_uint16 // on error: invalid array length header",
+      "defined_out": [
+        "aggregate%array_length%0#0",
+        "pools#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "pools#0",
+        "aggregate%array_length%0#0"
+      ]
+    },
+    "49": {
+      "op": "dup",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "aggregate%array_length%0#0"
+      ]
+    },
+    "50": {
+      "op": "cover 2",
+      "defined_out": [
+        "aggregate%array_length%0#0",
+        "pools#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "pools#0",
+        "aggregate%array_length%0#0"
+      ]
+    },
+    "52": {
+      "op": "intc_3 // 8",
+      "defined_out": [
+        "8",
+        "aggregate%array_length%0#0",
+        "pools#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "8"
+      ]
+    },
+    "53": {
+      "op": "*",
+      "defined_out": [
+        "aggregate%array_length%0#0",
+        "mul%0#0",
+        "pools#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "pools#0",
+        "mul%0#0"
+      ]
+    },
+    "54": {
+      "op": "pushint 2",
+      "defined_out": [
+        "2",
+        "aggregate%array_length%0#0",
+        "mul%0#0",
+        "pools#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "pools#0",
+        "mul%0#0",
+        "2"
+      ]
+    },
+    "56": {
+      "op": "+",
+      "defined_out": [
+        "add%0#0",
+        "aggregate%array_length%0#0",
+        "pools#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "pools#0",
+        "add%0#0"
+      ]
+    },
+    "57": {
+      "op": "swap",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "add%0#0",
+        "pools#0"
+      ]
+    },
+    "58": {
+      "op": "len",
+      "defined_out": [
+        "add%0#0",
+        "aggregate%array_length%0#0",
+        "len%0#0",
+        "pools#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "add%0#0",
+        "len%0#0"
+      ]
+    },
+    "59": {
+      "op": "==",
+      "defined_out": [
+        "aggregate%array_length%0#0",
+        "eq%0#0",
+        "pools#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "eq%0#0"
+      ]
+    },
+    "60": {
+      "error": "invalid number of bytes for arc4.dynamic_array<uint64>",
+      "op": "assert // invalid number of bytes for arc4.dynamic_array<uint64>",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0"
+      ]
+    },
+    "61": {
+      "op": "intc_0 // 0",
+      "defined_out": [
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "pools#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0"
+      ]
+    },
+    "62": {
+      "block": "getPoolStakers_for_header@2",
+      "stack_in": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0"
+      ],
+      "op": "dup",
+      "defined_out": [
+        "item_index_internal%0#0 (copy)"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "item_index_internal%0#0 (copy)"
+      ]
+    },
+    "63": {
+      "op": "dig 2",
+      "defined_out": [
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0 (copy)"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "item_index_internal%0#0 (copy)",
+        "aggregate%array_length%0#0"
+      ]
+    },
+    "65": {
+      "op": "<",
+      "defined_out": [
+        "aggregate%array_length%0#0",
+        "continue_looping%0#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "continue_looping%0#0"
+      ]
+    },
+    "66": {
+      "op": "bz getPoolStakers_after_for@18",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0"
+      ]
+    },
+    "69": {
+      "op": "dig 2",
+      "defined_out": [
+        "aggregate%array_length%0#0",
+        "pools#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "pools#0"
+      ]
+    },
+    "71": {
+      "op": "extract 2 0",
+      "defined_out": [
+        "aggregate%array_length%0#0",
+        "aggregate%array_trimmed%0#0",
+        "pools#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "aggregate%array_trimmed%0#0"
+      ]
+    },
+    "74": {
+      "op": "dig 1",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "aggregate%array_trimmed%0#0",
+        "item_index_internal%0#0 (copy)"
+      ]
+    },
+    "76": {
+      "op": "intc_3 // 8",
+      "defined_out": [
+        "8",
+        "aggregate%array_length%0#0",
+        "aggregate%array_trimmed%0#0",
+        "item_index_internal%0#0 (copy)",
+        "pools#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "aggregate%array_trimmed%0#0",
+        "item_index_internal%0#0 (copy)",
+        "8"
+      ]
+    },
+    "77": {
+      "op": "*",
+      "defined_out": [
+        "aggregate%array_length%0#0",
+        "aggregate%array_trimmed%0#0",
+        "aggregate%bytes_offset%0#0",
+        "pools#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "aggregate%array_trimmed%0#0",
+        "aggregate%bytes_offset%0#0"
+      ]
+    },
+    "78": {
+      "op": "extract_uint64",
+      "defined_out": [
+        "aggregate%array_length%0#0",
+        "pools#0",
+        "temp#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0"
+      ]
+    },
+    "79": {
+      "op": "txn ApplicationID",
+      "defined_out": [
+        "aggregate%array_length%0#0",
+        "pools#0",
+        "temp#0",
+        "tmp%0#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "tmp%0#0"
+      ]
+    },
+    "81": {
+      "op": "bnz getPoolStakers_bool_false@22",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0"
+      ]
+    },
+    "84": {
+      "op": "dup"
+    },
+    "85": {
+      "op": "global CurrentApplicationID",
+      "defined_out": [
+        "aggregate%array_length%0#0",
+        "pools#0",
+        "temp#0",
+        "temp#0 (copy)",
+        "tmp%2#1"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "temp#0 (copy)",
+        "tmp%2#1"
+      ]
+    },
+    "87": {
+      "op": ">=",
+      "defined_out": [
+        "aggregate%array_length%0#0",
+        "pools#0",
+        "temp#0",
+        "tmp%3#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "tmp%3#0"
+      ]
+    },
+    "88": {
+      "op": "bz getPoolStakers_bool_false@22",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0"
+      ]
+    },
+    "91": {
+      "op": "intc_1 // 1",
+      "defined_out": [
+        "aggregate%array_length%0#0",
+        "and_result%0#0",
+        "pools#0",
+        "temp#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "and_result%0#0"
+      ]
+    },
+    "92": {
+      "block": "getPoolStakers_bool_merge@23",
+      "stack_in": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "and_result%0#0"
+      ],
+      "op": "bnz getPoolStakers_block@16",
+      "defined_out": [],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0"
+      ]
+    },
+    "95": {
+      "op": "dup",
+      "defined_out": [
+        "temp#0 (copy)"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "temp#0 (copy)"
+      ]
+    },
+    "96": {
+      "op": "app_params_get AppCreator",
+      "defined_out": [
+        "awst_tmp%0#0",
+        "exists#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "awst_tmp%0#0",
+        "exists#0"
+      ]
+    },
+    "98": {
+      "op": "bury 1",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "exists#0"
+      ]
+    },
+    "100": {
+      "op": "bz getPoolStakers_block@16",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0"
+      ]
+    },
+    "102": {
+      "op": "dup",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "temp#0 (copy)"
+      ]
+    },
+    "103": {
+      "op": "bytec_0 // \"stakers\"",
+      "defined_out": [
+        "\"stakers\"",
+        "temp#0 (copy)"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "temp#0 (copy)",
+        "\"stakers\""
+      ]
+    },
+    "104": {
+      "op": "app_box_len",
+      "defined_out": [
+        "hasBox#0",
+        "length#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "length#0",
+        "hasBox#0"
+      ]
+    },
+    "106": {
+      "op": "swap",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "hasBox#0",
+        "length#0"
+      ]
+    },
+    "107": {
+      "op": "bury 6",
+      "defined_out": [
+        "hasBox#0",
+        "length#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "hasBox#0"
+      ]
+    },
+    "109": {
+      "op": "bz getPoolStakers_block@16",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0"
+      ]
+    },
+    "111": {
+      "op": "intc_0 // 0",
+      "defined_out": [
+        "at#0",
+        "length#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "at#0"
+      ]
+    },
+    "112": {
+      "op": "bury 7",
+      "defined_out": [
+        "at#0",
+        "length#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0"
+      ]
+    },
+    "114": {
+      "block": "getPoolStakers_while_top@10",
+      "stack_in": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0"
+      ],
+      "op": "dig 6",
+      "defined_out": [
+        "at#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "at#0"
+      ]
+    },
+    "116": {
+      "op": "intc_2 // 64",
+      "defined_out": [
+        "64",
+        "at#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "at#0",
+        "64"
+      ]
+    },
+    "117": {
+      "op": "+",
+      "defined_out": [
+        "at#0",
+        "at#3"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "at#3"
+      ]
+    },
+    "118": {
+      "op": "dup",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "at#3",
+        "at#3"
+      ]
+    },
+    "119": {
+      "op": "bury 7",
+      "defined_out": [
+        "at#0",
+        "at#3"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "at#3"
+      ]
+    },
+    "121": {
+      "op": "dig 5",
+      "defined_out": [
+        "at#0",
+        "at#3",
+        "length#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "at#3",
+        "length#0"
+      ]
+    },
+    "123": {
+      "op": "<=",
+      "defined_out": [
+        "at#0",
+        "at#3",
+        "length#0",
+        "tmp%3#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "tmp%3#0"
+      ]
+    },
+    "124": {
+      "op": "bz getPoolStakers_block@16",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0"
+      ]
+    },
+    "126": {
+      "op": "dup",
+      "defined_out": [
+        "at#0",
+        "at#3",
+        "length#0",
+        "temp#0 (copy)"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "temp#0 (copy)"
+      ]
+    },
+    "127": {
+      "op": "bytec_0 // \"stakers\"",
+      "defined_out": [
+        "\"stakers\"",
+        "at#0",
+        "at#3",
+        "length#0",
+        "temp#0 (copy)"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "temp#0 (copy)",
+        "\"stakers\""
+      ]
+    },
+    "128": {
+      "op": "dig 8",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "temp#0 (copy)",
+        "\"stakers\"",
+        "at#0"
+      ]
+    },
+    "130": {
+      "op": "intc_2 // 64",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "temp#0 (copy)",
+        "\"stakers\"",
+        "at#0",
+        "64"
+      ]
+    },
+    "131": {
+      "op": "app_box_extract",
+      "defined_out": [
+        "at#0",
+        "at#3",
+        "info#0",
+        "length#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "info#0"
+      ]
+    },
+    "133": {
+      "op": "dup",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "info#0",
+        "info#0"
+      ]
+    },
+    "134": {
+      "op": "bury 9",
+      "defined_out": [
+        "at#0",
+        "at#3",
+        "info#0",
+        "length#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "info#0"
+      ]
+    },
+    "136": {
+      "op": "extract 0 32",
+      "defined_out": [
+        "at#0",
+        "at#3",
+        "info#0",
+        "length#0",
+        "tmp%5#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "tmp%5#0"
+      ]
+    },
+    "139": {
+      "op": "global ZeroAddress",
+      "defined_out": [
+        "at#0",
+        "at#3",
+        "info#0",
+        "length#0",
+        "tmp%5#0",
+        "tmp%6#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "tmp%5#0",
+        "tmp%6#0"
+      ]
+    },
+    "141": {
+      "op": "==",
+      "defined_out": [
+        "at#0",
+        "at#3",
+        "info#0",
+        "length#0",
+        "tmp%7#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "tmp%7#0"
+      ]
+    },
+    "142": {
+      "op": "bnz getPoolStakers_block@14",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0"
+      ]
+    },
+    "144": {
+      "op": "dup",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "temp#0 (copy)"
+      ]
+    },
+    "145": {
+      "op": "itob",
+      "defined_out": [
+        "at#0",
+        "at#3",
+        "info#0",
+        "length#0",
+        "tmp%8#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "tmp%8#0"
+      ]
+    },
+    "146": {
+      "op": "dig 7",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "tmp%8#0",
+        "at#0"
+      ]
+    },
+    "148": {
+      "op": "intc_2 // 64",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "tmp%8#0",
+        "at#0",
+        "64"
+      ]
+    },
+    "149": {
+      "op": "/",
+      "defined_out": [
+        "at#0",
+        "at#3",
+        "info#0",
+        "length#0",
+        "tmp%8#0",
+        "tmp%9#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "tmp%8#0",
+        "tmp%9#0"
+      ]
+    },
+    "150": {
+      "op": "itob",
+      "defined_out": [
+        "at#0",
+        "at#3",
+        "info#0",
+        "length#0",
+        "tmp%10#0",
+        "tmp%8#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "tmp%8#0",
+        "tmp%10#0"
+      ]
+    },
+    "151": {
+      "op": "concat",
+      "defined_out": [
+        "at#0",
+        "at#3",
+        "info#0",
+        "length#0",
+        "tmp%11#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "tmp%11#0"
+      ]
+    },
+    "152": {
+      "op": "dig 8",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "tmp%11#0",
+        "info#0"
+      ]
+    },
+    "154": {
+      "op": "concat",
+      "defined_out": [
+        "at#0",
+        "at#3",
+        "info#0",
+        "length#0",
+        "tmp%12#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "tmp%12#0"
+      ]
+    },
+    "155": {
+      "op": "log",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0"
+      ]
+    },
+    "156": {
+      "block": "getPoolStakers_block@14",
+      "stack_in": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0"
+      ],
+      "op": "dig 5",
+      "defined_out": [
+        "at#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "at#0"
+      ]
+    },
+    "158": {
+      "op": "bury 7",
+      "defined_out": [
+        "at#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0"
+      ]
+    },
+    "160": {
+      "op": "b getPoolStakers_while_top@10"
+    },
+    "162": {
+      "block": "getPoolStakers_block@16",
+      "stack_in": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0"
+      ],
+      "op": "pop",
+      "defined_out": [
+        "item_index_internal%0#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0"
+      ]
+    },
+    "163": {
+      "op": "intc_1 // 1",
+      "defined_out": [
+        "1",
+        "item_index_internal%0#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "1"
+      ]
+    },
+    "164": {
+      "op": "+",
+      "defined_out": [
+        "item_index_internal%0#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0"
+      ]
+    },
+    "165": {
+      "op": "b getPoolStakers_for_header@2"
+    },
+    "168": {
+      "block": "getPoolStakers_bool_false@22",
+      "stack_in": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0"
+      ],
+      "op": "intc_0 // 0",
+      "defined_out": [
+        "and_result%0#0"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "temp#0",
+        "and_result%0#0"
+      ]
+    },
+    "169": {
+      "op": "b getPoolStakers_bool_merge@23"
+    },
+    "172": {
+      "block": "getPoolStakers_after_for@18",
+      "stack_in": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0"
+      ],
+      "op": "pushbytes base32(CUPXY5IAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)",
+      "defined_out": [
+        "CUPXY5IAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "CUPXY5IAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      ]
+    },
+    "258": {
+      "op": "log",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0"
+      ]
+    },
+    "259": {
+      "op": "intc_1 // 1",
+      "defined_out": [
+        "1"
+      ],
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0",
+        "1"
+      ]
+    },
+    "260": {
+      "op": "return",
+      "stack_out": [
+        "info#0",
+        "at#0",
+        "at#3",
+        "length#0",
+        "pools#0",
+        "aggregate%array_length%0#0",
+        "item_index_internal%0#0"
+      ]
+    }
+  }
+}

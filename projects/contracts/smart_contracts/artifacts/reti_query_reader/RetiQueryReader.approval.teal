@@ -1,0 +1,159 @@
+#pragma version 13
+#pragma typetrack false
+#pragma autosalt false
+
+// @algorandfoundation/algorand-typescript/arc4/index.d.ts::Contract.approvalProgram() -> uint64:
+main:
+    intcblock 0 1 64 8
+    bytecblock "stakers"
+    // smart_contracts/reti_query_reader/contract.algo.ts:20-21
+    // @contract({ avmVersion: 13 })
+    // export class RetiQueryReader extends Contract {
+    pushbytes 0xc8148dac // method "getPoolStakers(uint64[])(uint64,uint64,(address,uint64,uint64,uint64,uint64))"
+    txna ApplicationArgs 0
+    match main_getPoolStakers_route@2
+    err
+
+main_getPoolStakers_route@2:
+    // smart_contracts/reti_query_reader/contract.algo.ts:27
+    // @abimethod({ readonly: true, onCreate: "allow" })
+    txn OnCompletion
+    !
+    assert
+    b getPoolStakers
+
+
+// smart_contracts/reti_query_reader/contract.algo.ts::RetiQueryReader.getPoolStakers[routing]() -> void:
+getPoolStakers:
+    intc_0 // 0
+    pushbytes ""
+    dupn 2
+    // smart_contracts/reti_query_reader/contract.algo.ts:27
+    // @abimethod({ readonly: true, onCreate: "allow" })
+    txna ApplicationArgs 1
+    dupn 2
+    intc_0 // 0
+    extract_uint16 // on error: invalid array length header
+    dup
+    cover 2
+    intc_3 // 8
+    *
+    pushint 2
+    +
+    swap
+    len
+    ==
+    assert // invalid number of bytes for arc4.dynamic_array<uint64>
+    intc_0 // 0
+
+getPoolStakers_for_header@2:
+    // smart_contracts/reti_query_reader/contract.algo.ts:30
+    // for (const pool of pools) {
+    dup
+    dig 2
+    <
+    bz getPoolStakers_after_for@18
+    dig 2
+    extract 2 0
+    dig 1
+    intc_3 // 8
+    *
+    extract_uint64
+    // smart_contracts/reti_query_reader/contract.algo.ts:55
+    // return Txn.applicationId.id === 0 && id >= Global.currentApplicationId.id;
+    txn ApplicationID
+    bnz getPoolStakers_bool_false@22
+    dup
+    global CurrentApplicationID
+    >=
+    bz getPoolStakers_bool_false@22
+    intc_1 // 1
+
+getPoolStakers_bool_merge@23:
+    // smart_contracts/reti_query_reader/contract.algo.ts:31
+    // if (this.notCreatedYet(pool)) continue;
+    bnz getPoolStakers_block@16
+    // smart_contracts/reti_query_reader/contract.algo.ts:32
+    // const [, exists] = op.AppParams.appCreator(pool);
+    dup
+    app_params_get AppCreator
+    bury 1
+    // smart_contracts/reti_query_reader/contract.algo.ts:33
+    // if (!exists) continue;
+    bz getPoolStakers_block@16
+    // smart_contracts/reti_query_reader/contract.algo.ts:34
+    // const [length, hasBox] = op.AppBox.length(pool, name);
+    dup
+    bytec_0 // "stakers"
+    app_box_len
+    swap
+    bury 6
+    // smart_contracts/reti_query_reader/contract.algo.ts:35
+    // if (!hasBox) continue;
+    bz getPoolStakers_block@16
+    // smart_contracts/reti_query_reader/contract.algo.ts:36
+    // for (let at: uint64 = 0; at + STAKED_INFO_BYTES <= length; at += STAKED_INFO_BYTES) {
+    intc_0 // 0
+    bury 7
+
+getPoolStakers_while_top@10:
+    // smart_contracts/reti_query_reader/contract.algo.ts:36
+    // for (let at: uint64 = 0; at + STAKED_INFO_BYTES <= length; at += STAKED_INFO_BYTES) {
+    dig 6
+    intc_2 // 64
+    +
+    dup
+    bury 7
+    dig 5
+    <=
+    bz getPoolStakers_block@16
+    // smart_contracts/reti_query_reader/contract.algo.ts:37
+    // const info = op.AppBox.extract(pool, name, at, STAKED_INFO_BYTES);
+    dup
+    bytec_0 // "stakers"
+    dig 8
+    intc_2 // 64
+    app_box_extract
+    dup
+    bury 9
+    // smart_contracts/reti_query_reader/contract.algo.ts:38
+    // if (op.extract(info, 0, 32) === Global.zeroAddress.bytes) continue;
+    extract 0 32
+    global ZeroAddress
+    ==
+    bnz getPoolStakers_block@14
+    // smart_contracts/reti_query_reader/contract.algo.ts:40
+    // log(op.itob(pool).concat(op.itob(at / STAKED_INFO_BYTES)).concat(info));
+    dup
+    itob
+    dig 7
+    intc_2 // 64
+    /
+    itob
+    concat
+    dig 8
+    concat
+    log
+
+getPoolStakers_block@14:
+    dig 5
+    bury 7
+    b getPoolStakers_while_top@10
+
+getPoolStakers_block@16:
+    pop
+    intc_1 // 1
+    +
+    b getPoolStakers_for_header@2
+
+getPoolStakers_bool_false@22:
+    intc_0 // 0
+    b getPoolStakers_bool_merge@23
+
+getPoolStakers_after_for@18:
+    // smart_contracts/reti_query_reader/contract.algo.ts:27
+    // @abimethod({ readonly: true, onCreate: "allow" })
+    pushbytes base32(CUPXY5IAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)
+    log
+    intc_1 // 1
+    return
