@@ -223,6 +223,15 @@ const BLOCK_LOOKBACK = 1000n
  */
 const MIN_FEE = { extraFee: microAlgo(0) }
 
+/** `getValidators` is chunked into groups of this many validators (its `@ghostkit-chunk` maxPerGroup). */
+const VALIDATORS_PER_GROUP = 64
+/** The fewest validators `getAllValidators` reads in its first request: MainNet's count fits, so a cold read is one. */
+const ALL_VALIDATORS_MIN_GUESS = 256
+/** How many validators past the most seen `getAllValidators` reads, for those added since. */
+const ALL_VALIDATORS_HEADROOM = 16
+
+const roundUpTo = (n: number, step: number) => Math.ceil(n / step) * step
+
 /**
  * Read-only SDK for the Reti staking registry. Every read takes `{ round }` to read the state as of that round, or
  * pin a round for all reads with `atRound`.
@@ -247,6 +256,8 @@ export class RetiGhostSDK {
     /** The node's latest round when last read; rounds only grow, so any round up to it exists. */
     latest?: { round: bigint; at: number }
     statusRead?: Promise<bigint>
+    /** The most validators any read has seen: `getAllValidators` reads this many (and some) in its first request. */
+    validatorCount?: number
   }
 
   constructor({
@@ -284,15 +295,19 @@ export class RetiGhostSDK {
   }
 
   /**
-   * Fetches what the first reads wait for: the node's limits (and suggested params on a node without queries) and the
-   * registry's creation round, which every read at a past round checks. Calls fetch them anyway; this lets them arrive
+   * Fetches what the first reads wait for: the node's limits (and suggested params on a node without queries), the
+   * registry's creation round, and the node's latest round, which every read at a past round checks (on a time-travel
+   * node, rounds up to the latest seen need no further status read). Calls fetch them anyway; this lets them arrive
    * while the app does other work. Errors reject here; the read that needs it retries.
    *
    * @param options.signal Stops the wait only: the fetches are shared and carry on for the reads that need them
    */
   async prefetch({ signal }: SignalOptions = {}): Promise<void> {
     signal?.throwIfAborted()
-    await raceAbort(Promise.all([this.ghost.prefetch(), this.getRegistryCreationRound()]), signal)
+    await raceAbort(
+      Promise.all([this.ghost.prefetch(), this.getRegistryCreationRound(), this.latestRound(0n, STATUS_MAX_AGE_MS)]),
+      signal,
+    )
   }
 
   /** Whether reads at any round since genesis work: a dtalgorand node with time travel, and the dtalgorand forks. */
@@ -429,6 +444,38 @@ export class RetiGhostSDK {
         ...sim(options),
       }),
     )
+  }
+
+  /**
+   * Every validator at the read's round, in id order (ids run from 1 to the registry's count): usually one request.
+   *
+   * The count and validators 1..N go in one batch, where N is a guess: the most validators this SDK has seen (or
+   * `expectedCount`) plus headroom, and at least {@link ALL_VALIDATORS_MIN_GUESS}. Ids past the count read as empty,
+   * for a global state read each, and are dropped. Only if the registry has outgrown the guess does a second request
+   * read the rest, at the same round.
+   */
+  async getAllValidators(options: ReadOptions & { expectedCount?: number } = {}): Promise<Validator[]> {
+    const { signal } = options
+    const known = Math.max(this.shared.validatorCount ?? 0, options.expectedCount ?? 0)
+    const guess = roundUpTo(Math.max(known + ALL_VALIDATORS_HEADROOM, ALL_VALIDATORS_MIN_GUESS), VALIDATORS_PER_GROUP)
+    const idRange = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => BigInt(from + i))
+    return this.read(options, async (r) => {
+      const [[totals], validators] = await r.batch(
+        (s) => [
+          s.getRegistryTotals({ methodArgsOrArgsArray: { registryAppId: this.registryAppId }, extraMethodCallArgs: MIN_FEE }),
+          s.getValidators({ methodArgsOrArgsArray: { registryAppId: this.registryAppId, validatorIds: idRange(1, guess) } }),
+        ],
+        simOptions({ signal }),
+      )
+      const count = Number(totals.numValidators)
+      this.shared.validatorCount = Math.max(this.shared.validatorCount ?? 0, count)
+      if (count <= guess) return validators.slice(0, count)
+      const rest = await r.getValidators({
+        methodArgsOrArgsArray: { registryAppId: this.registryAppId, validatorIds: idRange(guess + 1, count) },
+        ...sim(options),
+      })
+      return [...validators, ...rest]
+    })
   }
 
   /** Each validator's pool count, stakers and stake, in input order: a small read, made for charts. */

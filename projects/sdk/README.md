@@ -52,7 +52,7 @@ See [the repo README](https://github.com/d13co/reti-ghost-sdk/tree/dtalgorand#re
 | Pool algod version history | a dtalgorand node with versions key filters (`key=` on `…/versions`), and the forks |
 | Faster reads (queries) | a dtalgorand node with queries (`GET /v2/capabilities` reports a `query` object); without it the same reads go through the extended simulate |
 
-`sdk.getNode()` reports what was detected, the node's simulate limits, and `query` (the query limits) when reads go through queries; `sdk.supportsTimeTravel()` answers the main question, and `sdk.getMaxRounds()` how many rounds one simulate request covers. `sdk.prefetch()` fetches what the first reads wait for (the node's limits, the registry's creation round, and suggested params on a node without queries), so an app can start it early.
+`sdk.getNode()` reports what was detected, the node's simulate limits, and `query` (the query limits) when reads go through queries; `sdk.supportsTimeTravel()` answers the main question, and `sdk.getMaxRounds()` how many rounds one simulate request covers. `sdk.prefetch()` fetches what the first reads wait for (the node's limits, the registry's creation round, the node's latest round, and suggested params on a node without queries), so an app can start it early. On a time-travel node, a read at or below the latest round seen needs no status read, so after `prefetch` a past-round read is one request.
 
 
 ## Quick Start
@@ -65,15 +65,13 @@ import { RetiGhostSDK } from "reti-ghost-sdk"
 const algorand = AlgorandClient.fromConfig({ algodConfig: { server: "https://dtalgod.example.com", port: 443, token: "" } })
 const sdk = new RetiGhostSDK({ algorand, registryAppId: 2714516089n })
 
-// latest
-const { numValidators } = await sdk.getRegistryTotals()
-const validators = await sdk.getValidators(Array.from({ length: numValidators }, (_, i) => i + 1))
+// latest: every validator, with the count, in one request
+const validators = await sdk.getAllValidators()
 
 // as of a date
 const { round } = await sdk.roundAt(new Date("2025-06-01T00:00:00Z"))
 const then = sdk.atRound(round) // every read of `then` is as of `round`
-const { numValidators: n } = await then.getRegistryTotals()
-const validatorsThen = await then.getValidators(Array.from({ length: n }, (_, i) => i + 1))
+const validatorsThen = await then.getAllValidators()
 
 // or per call
 const [state] = await sdk.getValidatorStates([1], { round: 55_000_000n })
@@ -113,6 +111,7 @@ All methods are read-only, take an optional trailing `{ round }`, and return res
 
 ### Validators
 
+- `getAllValidators({ expectedCount? })`: every validator, in id order, usually in one request. The registry's count and validators 1..N go in one batch, N being a guess (the most validators this SDK has seen, or `expectedCount`, plus 16, and at least 256, rounded up to whole groups of 64); ids past the count read as empty and are dropped, and only a registry that outgrew the guess takes a second request. A contract can't list boxes, so the reader needs the ids up front.
 - `getValidators(validatorIds)`: config, state, `poolInfo` (`[poolAppId, totalStakers, totalAlgoStaked]` tuples) and node assignments per validator.
 - `getValidatorConfig(validatorIds)`, `getValidatorStates(validatorIds)`, `getNodePoolAssignments(validatorIds)`.
 - `getPools(validatorIds)`: for each validator, its `PoolInfo` objects.
