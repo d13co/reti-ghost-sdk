@@ -2,6 +2,7 @@ import type { AlgorandClient } from "@algorandfoundation/algokit-utils"
 import { decodeAddress } from "algosdk"
 import { uint64BoxName } from "../decode.js"
 import { requireDT } from "../errors.js"
+import { describeVersions, traced } from "../utils/trace.js"
 
 /** What to list the changes of. */
 export type TimelineTarget =
@@ -63,9 +64,12 @@ export async function getChangeRounds(
   registryAppId: bigint,
   target: TimelineTarget,
   { minRound, maxRound, limit = MAX_UNBOUNDED_CHANGES, order = "desc", next, signal }: TimelineOptions = {},
+  debug = false,
 ): Promise<TimelinePage> {
   if (minRound === undefined && !(order === "desc" && limit <= MAX_UNBOUNDED_CHANGES)) {
-    throw new Error(`getChangeRounds: set minRound, or use order 'desc' with a limit of at most ${MAX_UNBOUNDED_CHANGES}`)
+    throw new Error(
+      `getChangeRounds: set minRound, or use order 'desc' with a limit of at most ${MAX_UNBOUNDED_CHANGES}`,
+    )
   }
   const options = {
     ...(minRound !== undefined ? { minRound: BigInt(minRound) } : {}),
@@ -76,20 +80,35 @@ export async function getChangeRounds(
     ...(signal ? { signal } : {}),
   }
   const dt = requireDT(algorand, "getChangeRounds")
-  const page =
-    "validator" in target
-      ? await dt.getBoxVersions(registryAppId, uint64BoxName("v", target.validator), options)
-      : "registry" in target
-        ? await dt.getAppVersions(registryAppId, options)
-        : "pool" in target
-          ? await dt.getAppVersions(BigInt(target.pool), options)
-          : "poolStakers" in target
-            ? await dt.getBoxVersions(BigInt(target.poolStakers), "stakers", options)
-            : await dt.getBoxVersions(registryAppId, stakerPoolSetBoxName(target.staker), options)
+  const page = await traced(
+    debug,
+    "change-rounds",
+    { target: targetKey(target), minRound, maxRound, order, limit, page: next ? "next" : undefined },
+    () =>
+      "validator" in target
+        ? dt.getBoxVersions(registryAppId, uint64BoxName("v", target.validator), options)
+        : "registry" in target
+          ? dt.getAppVersions(registryAppId, options)
+          : "pool" in target
+            ? dt.getAppVersions(BigInt(target.pool), options)
+            : "poolStakers" in target
+              ? dt.getBoxVersions(BigInt(target.poolStakers), "stakers", options)
+              : dt.getBoxVersions(registryAppId, stakerPoolSetBoxName(target.staker), options),
+    describeVersions,
+  )
   return {
     changes: page.versions.map(({ round, timestamp, deleted }) => ({ round, timestamp, deleted })),
     ...(page.nextToken ? { next: page.nextToken } : {}),
   }
+}
+
+/** A target, for debug lines. */
+function targetKey(target: TimelineTarget): string {
+  if ("validator" in target) return `validator:${target.validator}`
+  if ("registry" in target) return "registry"
+  if ("pool" in target) return `pool:${target.pool}`
+  if ("poolStakers" in target) return `pool-stakers:${target.poolStakers}`
+  return `staker:${target.staker}`
 }
 
 /** The registry's box of the pools a staker is in: `sps` + the staker's public key. */

@@ -22,10 +22,26 @@ import { RetiQueryReaderSDK } from "./generated/RetiQueryReaderSDK.js"
 import { RoundBatcher } from "./utils/batcher.js"
 import { bytesToBigInt, decodeStakersBox, type PoolStaker } from "./decode.js"
 import { abortable, raceAbort, sim, simOptions } from "./abort.js"
-import { FutureRoundError, isDTUnsupported, requireDT, RetiNotDeployedError, TimeTravelUnavailableError } from "./errors.js"
+import {
+  FutureRoundError,
+  isDTUnsupported,
+  requireDT,
+  RetiNotDeployedError,
+  TimeTravelUnavailableError,
+} from "./errors.js"
 import { RoundClock, type RoundAtOptions, type RoundTime } from "./history/dateToRound.js"
-import { getPoolAlgodVersionChanges, type AlgodVersionChange, type AlgodVersionChangesOptions } from "./history/algodVersions.js"
-import { getChangeRounds, stakerPoolSetBoxName, type TimelineOptions, type TimelinePage, type TimelineTarget } from "./history/timeline.js"
+import {
+  getPoolAlgodVersionChanges,
+  type AlgodVersionChange,
+  type AlgodVersionChangesOptions,
+} from "./history/algodVersions.js"
+import {
+  getChangeRounds,
+  stakerPoolSetBoxName,
+  type TimelineOptions,
+  type TimelinePage,
+  type TimelineTarget,
+} from "./history/timeline.js"
 import {
   approximateLeaves,
   eventsFromStates,
@@ -42,6 +58,7 @@ import {
   type StakerPoolSetVersion,
 } from "./history/stakerHistory.js"
 import { pMap } from "./utils/p-map.js"
+import { describeVersions, traced } from "./utils/trace.js"
 import { MAX_SERIES_POINTS, seriesRounds, type SeriesPoint, type SeriesRounds } from "./history/series.js"
 
 export type {
@@ -64,7 +81,13 @@ export { GhostkitError } from "./generated/RetiReaderSDK.js"
 export { FutureRoundError, RetiNotDeployedError, TimeTravelUnavailableError, isDTUnsupported } from "./errors.js"
 export { RoundClock, type RoundAtOptions, type RoundTime } from "./history/dateToRound.js"
 export { ALGOD_VERSION_KEY, type AlgodVersionChange, type AlgodVersionChangesOptions } from "./history/algodVersions.js"
-export { MAX_UNBOUNDED_CHANGES, type Change, type TimelineOptions, type TimelinePage, type TimelineTarget } from "./history/timeline.js"
+export {
+  MAX_UNBOUNDED_CHANGES,
+  type Change,
+  type TimelineOptions,
+  type TimelinePage,
+  type TimelineTarget,
+} from "./history/timeline.js"
 export { MAX_SERIES_POINTS, seriesRounds, type SeriesPoint, type SeriesRounds } from "./history/series.js"
 export { decodeStakerPoolSet, type PoolStaker, type StakerPoolKey } from "./decode.js"
 export {
@@ -200,7 +223,10 @@ export type RetiGhostSDKParams = {
   ghostFee?: GhostkitSDKParams["ghostFee"]
   /** Milliseconds reads at the latest round reuse suggested params for (default 3,000) */
   cacheParamsTimeout?: number
-  /** Log each query or simulate */
+  /**
+   * Log each request: the generated reader's queries and simulates, and the SDK's own status, block header, `/versions`
+   * and box reads
+   */
   debug?: boolean
   /**
    * How long `getPoolStakers` waits for other calls at the same round to be read with it (default 10 ms): on a node
@@ -295,14 +321,18 @@ export class RetiGhostSDK {
     const params: GhostkitSDKParams = { algorand, readerAccount, backend, ghostFee, cacheParamsTimeout, debug }
     this.ghost = new RetiReaderSDK(params)
     this.baseSDK = ghostAppId ? new RetiReaderSDK({ ...params, ghostAppId }) : this.ghost
-    this.clock = new RoundClock(algorand)
+    this.clock = new RoundClock(algorand, debug)
     this.queryGhost = new RetiQueryReaderSDK({ ...params, backend: "query" })
-    this.shared = { stakers: new RoundBatcher((pools, round, signal) => this.readPoolStakers(pools, round, signal), batchWindowMs) }
+    this.shared = {
+      stakers: new RoundBatcher((pools, round, signal) => this.readPoolStakers(pools, round, signal), batchWindowMs),
+    }
   }
 
   /** The same SDK with every read as of the end of `round`; `undefined` reads the latest state. */
   atRound(round: number | bigint | undefined): RetiGhostSDK {
-    return Object.assign(Object.create(this) as RetiGhostSDK, { round: round === undefined ? undefined : BigInt(round) })
+    return Object.assign(Object.create(this) as RetiGhostSDK, {
+      round: round === undefined ? undefined : BigInt(round),
+    })
   }
 
   // ---------------------------------------------------------------------------------------------------------------
@@ -354,8 +384,13 @@ export class RetiGhostSDK {
       // `algorand.dt` only exists on the dtalgorand fork of algokit-utils
       const dt = (this.algorand as Partial<Pick<AlgorandClient, "dt">>).dt
       if (!dt) return Promise.resolve(undefined)
-      const lookup = dt
-        .getAppVersions(this.registryAppId, { order: "asc", limit: 1 })
+      const lookup = traced(
+        this.ghost.debug,
+        "registry-creation",
+        { app: this.registryAppId },
+        () => dt.getAppVersions(this.registryAppId, { order: "asc", limit: 1 }),
+        describeVersions,
+      )
         .then(({ versions }) => versions[0]?.round)
         .catch((e) => {
           if (isDTUnsupported(e)) return undefined
@@ -387,7 +422,10 @@ export class RetiGhostSDK {
     })
     const uint = (key: string) => {
       const value = state[key]?.value
-      if (value === undefined) throw new Error(`${key} not found in the registry's global state${round !== undefined ? ` at round ${round}` : ""}`)
+      if (value === undefined)
+        throw new Error(
+          `${key} not found in the registry's global state${round !== undefined ? ` at round ${round}` : ""}`,
+        )
       return BigInt(value)
     }
     return { numValidators: Number(uint("numV")), numStakers: uint("numStakers"), staked: uint("staked") }
@@ -428,7 +466,10 @@ export class RetiGhostSDK {
   }
 
   /** Each validator's pools, in input order. */
-  async getPools(validatorIds: (number | bigint)[], options: ReadOptions = {}): Promise<ValidatorPoolInfo["poolInfo"][][]> {
+  async getPools(
+    validatorIds: (number | bigint)[],
+    options: ReadOptions = {},
+  ): Promise<ValidatorPoolInfo["poolInfo"][][]> {
     const ids = validatorIds.map(BigInt)
     const results = await this.read(options, (r) =>
       r.getPools({
@@ -446,7 +487,10 @@ export class RetiGhostSDK {
   }
 
   /** Each validator's node to pool assignments, in input order. */
-  async getNodePoolAssignments(validatorIds: (number | bigint)[], options: ReadOptions = {}): Promise<NodePoolAssignmentConfig[]> {
+  async getNodePoolAssignments(
+    validatorIds: (number | bigint)[],
+    options: ReadOptions = {},
+  ): Promise<NodePoolAssignmentConfig[]> {
     return this.read(options, (r) =>
       r.getNodePoolAssignments({
         methodArgsOrArgsArray: { registryAppId: this.registryAppId, validatorIds: validatorIds.map(BigInt) },
@@ -481,8 +525,13 @@ export class RetiGhostSDK {
     return this.read(options, async (r) => {
       const [[totals], validators] = await r.batch(
         (s) => [
-          s.getRegistryTotals({ methodArgsOrArgsArray: { registryAppId: this.registryAppId }, extraMethodCallArgs: MIN_FEE }),
-          s.getValidators({ methodArgsOrArgsArray: { registryAppId: this.registryAppId, validatorIds: idRange(1, guess) } }),
+          s.getRegistryTotals({
+            methodArgsOrArgsArray: { registryAppId: this.registryAppId },
+            extraMethodCallArgs: MIN_FEE,
+          }),
+          s.getValidators({
+            methodArgsOrArgsArray: { registryAppId: this.registryAppId, validatorIds: idRange(1, guess) },
+          }),
         ],
         simOptions({ signal }),
       )
@@ -515,16 +564,25 @@ export class RetiGhostSDK {
     const states = await this.read(options, (r) =>
       r.getPoolStates({ methodArgsOrArgsArray: { pools: poolAppIds.map(BigInt) }, ...sim(options) }),
     )
-    return states.map((s) => ({ ...s, stakeAccumulator: bytesToBigInt(s.stakeAccumulator), ewma: bytesToBigInt(s.ewma) }))
+    return states.map((s) => ({
+      ...s,
+      stakeAccumulator: bytesToBigInt(s.stakeAccumulator),
+      ewma: bytesToBigInt(s.ewma),
+    }))
   }
 
   /** Each pool's stakers and stake, in input order: a small read, made for charts. */
   async getPoolTotals(poolAppIds: (number | bigint)[], options: ReadOptions = {}): Promise<PoolTotals[]> {
-    return this.read(options, (r) => r.getPoolTotals({ methodArgsOrArgsArray: { pools: poolAppIds.map(BigInt) }, ...sim(options) }))
+    return this.read(options, (r) =>
+      r.getPoolTotals({ methodArgsOrArgsArray: { pools: poolAppIds.map(BigInt) }, ...sim(options) }),
+    )
   }
 
   /** Each pool's balance and last payout round, in input order. */
-  async getPoolBalancesAndLastPayouts(poolAppIds: (number | bigint)[], options: ReadOptions = {}): Promise<PoolBalanceAndLastPayout[]> {
+  async getPoolBalancesAndLastPayouts(
+    poolAppIds: (number | bigint)[],
+    options: ReadOptions = {},
+  ): Promise<PoolBalanceAndLastPayout[]> {
     const data = await this.read(options, (r) =>
       r.getPoolBalancesAndLastPayouts({
         methodArgsOrArgsArray: { poolAppIds: poolAppIds.map(BigInt) },
@@ -536,7 +594,9 @@ export class RetiGhostSDK {
 
   /** Each pool's reported algod version, or "" if it has none, in input order. */
   async getPoolAlgodVersions(poolAppIds: (number | bigint)[], options: ReadOptions = {}): Promise<string[]> {
-    return this.read(options, (r) => r.getAlgodVersion({ methodArgsOrArgsArray: { poolAppIds: poolAppIds.map(BigInt) }, ...sim(options) }))
+    return this.read(options, (r) =>
+      r.getAlgodVersion({ methodArgsOrArgsArray: { poolAppIds: poolAppIds.map(BigInt) }, ...sim(options) }),
+    )
   }
 
   /**
@@ -560,7 +620,6 @@ export class RetiGhostSDK {
     return poolAppIds.map((id) => byPool.get(BigInt(id)) ?? [])
   }
 
-
   // ---------------------------------------------------------------------------------------------------------------
   // Stakers and accounts
 
@@ -583,7 +642,9 @@ export class RetiGhostSDK {
   async getAssetHoldings(holdings: AccountAssetRef[], options: ReadOptions = {}): Promise<AssetHolding[]> {
     return this.read(options, (r) =>
       r.getAssetHoldings({
-        methodArgsOrArgsArray: { holdings: holdings.map(({ account, assetId }): [string, bigint] => [account, BigInt(assetId)]) },
+        methodArgsOrArgsArray: {
+          holdings: holdings.map(({ account, assetId }): [string, bigint] => [account, BigInt(assetId)]),
+        },
         ...sim(options),
       }),
     )
@@ -630,7 +691,10 @@ export class RetiGhostSDK {
    * (rounds any distance apart). Rounds are deduplicated and sorted; a round that can't be read is `ok: false`. The
    * timestamps are cached in `clock`.
    */
-  async getTimestampsAtRounds(rounds: (number | bigint)[], options: SignalOptions = {}): Promise<SeriesPoint<number>[]> {
+  async getTimestampsAtRounds(
+    rounds: (number | bigint)[],
+    options: SignalOptions = {},
+  ): Promise<SeriesPoint<number>[]> {
     const list = seriesRounds(rounds, Infinity)
     if (list.length === 0) return []
     const results = await abortable(options.signal, () =>
@@ -730,7 +794,10 @@ export class RetiGhostSDK {
    * the registry's creation round by default, and returns that round for an earlier `time` (`clamp: false` throws a
    * `RangeError` instead).
    */
-  async roundAt(time: Date | number, { minRound, clamp = true, onProbe, signal }: RoundAtOptions = {}): Promise<RoundTime> {
+  async roundAt(
+    time: Date | number,
+    { minRound, clamp = true, onProbe, signal }: RoundAtOptions = {},
+  ): Promise<RoundTime> {
     const min = minRound ?? (await raceAbort(this.getRegistryCreationRound(), signal)) ?? 1n
     return this.clock.roundAt(time, { minRound: min, clamp, onProbe, signal })
   }
@@ -749,7 +816,7 @@ export class RetiGhostSDK {
    * error for which `isDTUnsupported` is true without the dtalgorand forks or on a node without `/versions`.
    */
   getChangeRounds(target: TimelineTarget, options?: TimelineOptions): Promise<TimelinePage> {
-    return getChangeRounds(this.algorand, this.registryAppId, target, options)
+    return getChangeRounds(this.algorand, this.registryAppId, target, options, this.ghost.debug)
   }
 
   /**
@@ -757,8 +824,17 @@ export class RetiGhostSDK {
    * app's versions filtered to that key, one request per ~1,000 changes (a pool's whole history is 1–2). Needs a
    * dtalgorand node with versions key filters; errors pass through (`isDTUnsupported` without the forks or `/versions`).
    */
-  getPoolAlgodVersionChanges(poolAppId: number | bigint, options?: AlgodVersionChangesOptions): Promise<AlgodVersionChange[]> {
-    return getPoolAlgodVersionChanges(this.algorand, poolAppId, options)
+  getPoolAlgodVersionChanges(
+    poolAppId: number | bigint,
+    options?: AlgodVersionChangesOptions,
+  ): Promise<AlgodVersionChange[]> {
+    return traced(
+      this.ghost.debug,
+      "algod-version-changes",
+      { pool: poolAppId, minRound: options?.minRound, maxRound: options?.maxRound },
+      () => getPoolAlgodVersionChanges(this.algorand, poolAppId, options),
+      (changes) => `${changes.length} changes`,
+    )
   }
 
   /**
@@ -766,7 +842,10 @@ export class RetiGhostSDK {
    * staker, which is never deleted (one request per 1,000 changes to it). Throws an error for which `isDTUnsupported` is
    * true without the dtalgorand forks or on a node without `/versions`.
    */
-  async getStakerPools(staker: string, { maxRound, signal }: { maxRound?: number | bigint } & SignalOptions = {}): Promise<StakerPoolMembership[]> {
+  async getStakerPools(
+    staker: string,
+    { maxRound, signal }: { maxRound?: number | bigint } & SignalOptions = {},
+  ): Promise<StakerPoolMembership[]> {
     const { versions } = await this.stakerPoolSetVersions(staker, maxRound, signal)
     return stakerMemberships(versions)
   }
@@ -809,14 +888,23 @@ export class RetiGhostSDK {
    */
   async getStakerHistory(
     staker: string,
-    { minRound, maxRound, validatorId, roundsPerWave = HISTORY_ROUNDS_PER_WAVE, signal, onProgress }: StakerHistoryOptions = {},
+    {
+      minRound,
+      maxRound,
+      validatorId,
+      roundsPerWave = HISTORY_ROUNDS_PER_WAVE,
+      signal,
+      onProgress,
+    }: StakerHistoryOptions = {},
   ): Promise<StakerHistory> {
     await this.requireTimeTravel(signal)
     const { versions, round } = await this.stakerPoolSetVersions(staker, maxRound, signal)
     const min = minRound === undefined ? undefined : BigInt(minRound)
     const validator = validatorId === undefined ? undefined : BigInt(validatorId)
     const pools = stakerMemberships(versions).filter(
-      (m) => (validator === undefined || m.validatorId === validator) && (min === undefined || m.leaveRound === undefined || m.leaveRound >= min),
+      (m) =>
+        (validator === undefined || m.validatorId === validator) &&
+        (min === undefined || m.leaveRound === undefined || m.leaveRound >= min),
     )
     const clipped = pools.map((m) => min !== undefined && m.joinRound < min)
     const approximate = new Map<number, boolean>()
@@ -825,7 +913,9 @@ export class RetiGhostSDK {
 
     const history = (): StakerHistory => ({
       events: newestFirst(
-        searches.map((search, k) => eventsFromStates(pools[k], search, { clipped: clipped[k], approximateLeave: approximate.get(k) })),
+        searches.map((search, k) =>
+          eventsFromStates(pools[k], search, { clipped: clipped[k], approximateLeave: approximate.get(k) }),
+        ),
       ),
       pools,
       round,
@@ -860,7 +950,9 @@ export class RetiGhostSDK {
     const read: PositionsReader = async (list) => {
       const chunks: bigint[][] = []
       for (let at = 0; at < list.length; at += MAX_SERIES_POINTS) chunks.push(list.slice(at, at + MAX_SERIES_POINTS))
-      const points = await Promise.all(chunks.map((chunk) => this.getStakerPositionsSeries([staker], chunk, { signal })))
+      const points = await Promise.all(
+        chunks.map((chunk) => this.getStakerPositionsSeries([staker], chunk, { signal })),
+      )
       return points.flat()
     }
     searches = await searchEvents(
@@ -925,7 +1017,11 @@ export class RetiGhostSDK {
     const list = seriesRounds(rounds, maxPoints)
     const points = await this.seriesAt(
       list,
-      (s) => s.getRegistryTotals({ methodArgsOrArgsArray: { registryAppId: this.registryAppId }, extraMethodCallArgs: MIN_FEE }),
+      (s) =>
+        s.getRegistryTotals({
+          methodArgsOrArgsArray: { registryAppId: this.registryAppId },
+          extraMethodCallArgs: MIN_FEE,
+        }),
       signal,
     )
     return points.map((p): SeriesPoint<RegistryTotals> => {
@@ -949,12 +1045,17 @@ export class RetiGhostSDK {
    *
    * An abort rejects the whole series with the signal's reason; it never becomes failed points.
    */
-  private async seriesAt<T>(rounds: bigint[], read: (s: RetiReaderSDK) => Promise<T>, signal?: AbortSignal): Promise<SeriesPoint<T>[]> {
+  private async seriesAt<T>(
+    rounds: bigint[],
+    read: (s: RetiReaderSDK) => Promise<T>,
+    signal?: AbortSignal,
+  ): Promise<SeriesPoint<T>[]> {
     type Outcome = { ok: true; value: unknown } | { ok: false; error: Error }
     const plans = await this.planRounds(rounds, signal)
     const past = plans.flatMap((p) => ("at" in p && p.at !== undefined ? [p.at] : []))
     const needsLatest = plans.some((p) => "at" in p && p.at === undefined)
-    const withTimestamp = (s: RetiReaderSDK) => [read(s), s.getRoundTimestamp({ methodArgsOrArgsArray: {}, extraMethodCallArgs: MIN_FEE })] as const
+    const withTimestamp = (s: RetiReaderSDK) =>
+      [read(s), s.getRoundTimestamp({ methodArgsOrArgsArray: {}, extraMethodCallArgs: MIN_FEE })] as const
     const [pastResults, latest] = await Promise.all([
       past.length > 0 ? this.ghost.atRounds(past, withTimestamp, simOptions({ signal })) : [],
       needsLatest
@@ -986,8 +1087,15 @@ export class RetiGhostSDK {
   private async requireTimeTravel(signal?: AbortSignal): Promise<void> {
     const node = await raceAbort(this.getNode(), signal)
     if (node.kind === "dt" && node.limits.timeTravel) return
-    const [last, creation] = await raceAbort(Promise.all([this.latestRound(0n, STATUS_MAX_AGE_MS), this.getRegistryCreationRound()]), signal)
-    throw new TimeTravelUnavailableError(creation ?? 1n, last, node.kind === "stock" ? node.reason : "time travel is off")
+    const [last, creation] = await raceAbort(
+      Promise.all([this.latestRound(0n, STATUS_MAX_AGE_MS), this.getRegistryCreationRound()]),
+      signal,
+    )
+    throw new TimeTravelUnavailableError(
+      creation ?? 1n,
+      last,
+      node.kind === "stock" ? node.reason : "time travel is off",
+    )
   }
 
   /**
@@ -1000,20 +1108,29 @@ export class RetiGhostSDK {
     signal?: AbortSignal,
   ): Promise<{ versions: StakerPoolSetVersion[]; round: bigint }> {
     const dt = requireDT(this.algorand, "getStakerPools")
-    const round = maxRound !== undefined ? BigInt(maxRound) : await raceAbort(this.latestRound(0n, STATUS_MAX_AGE_MS), signal)
+    const round =
+      maxRound !== undefined ? BigInt(maxRound) : await raceAbort(this.latestRound(0n, STATUS_MAX_AGE_MS), signal)
     const name = stakerPoolSetBoxName(staker)
     const versions: StakerPoolSetVersion[] = []
     let next: string | undefined
     do {
-      const page = await dt.getBoxVersions(this.registryAppId, name, {
-        includeValues: true,
-        order: "asc",
-        limit: 1_000,
-        maxRound: round,
-        ...(next ? { next } : {}),
-        ...(signal ? { signal } : {}),
-      })
-      for (const { round, timestamp, deleted, value } of page.versions) versions.push({ round, timestamp, deleted, ...(value ? { value } : {}) })
+      const page = await traced(
+        this.ghost.debug,
+        "staker-pool-set-versions",
+        { staker, maxRound: round, page: next ? "next" : undefined },
+        () =>
+          dt.getBoxVersions(this.registryAppId, name, {
+            includeValues: true,
+            order: "asc",
+            limit: 1_000,
+            maxRound: round,
+            ...(next ? { next } : {}),
+            ...(signal ? { signal } : {}),
+          }),
+        describeVersions,
+      )
+      for (const { round, timestamp, deleted, value } of page.versions)
+        versions.push({ round, timestamp, deleted, ...(value ? { value } : {}) })
       next = page.nextToken
     } while (next)
     return { versions, round }
@@ -1036,14 +1153,22 @@ export class RetiGhostSDK {
     while (first <= last) {
       const page = await this.getChangeRounds(
         { poolStakers: m.poolAppId },
-        { minRound: first, maxRound: last, order: "asc", limit: 10_000, ...(next ? { next } : {}), ...(signal ? { signal } : {}) },
+        {
+          minRound: first,
+          maxRound: last,
+          order: "asc",
+          limit: 10_000,
+          ...(next ? { next } : {}),
+          ...(signal ? { signal } : {}),
+        },
       )
       for (const { round, timestamp } of page.changes) rounds.push({ round, timestamp })
       next = page.next
       if (!next) break
     }
     // the join changes the box; keep the search's first round the join even if the listing disagrees
-    if (from === undefined && rounds[0]?.round !== m.joinRound) rounds.unshift({ round: m.joinRound, timestamp: m.joinTimestamp })
+    if (from === undefined && rounds[0]?.round !== m.joinRound)
+      rounds.unshift({ round: m.joinRound, timestamp: m.joinTimestamp })
     return rounds
   }
 
@@ -1069,7 +1194,11 @@ export class RetiGhostSDK {
     const known = this.shared.latest?.round ?? -1n
     // shared reads: an abort stops the wait, not the reads
     const [node, creation, reported] = await raceAbort(
-      Promise.all([this.getNode(), this.getRegistryCreationRound(), highest > known ? this.latestRound(highest, Infinity) : undefined]),
+      Promise.all([
+        this.getNode(),
+        this.getRegistryCreationRound(),
+        highest > known ? this.latestRound(highest, Infinity) : undefined,
+      ]),
       signal,
     )
     const timeTravel = node.kind === "dt" && node.limits.timeTravel
@@ -1093,13 +1222,17 @@ export class RetiGhostSDK {
     const cached = this.shared.latest
     if (cached && cached.round >= atLeast && Date.now() - cached.at <= maxAge) return Promise.resolve(cached.round)
     if (!this.shared.statusRead) {
-      const read = this.algorand.client.algod
-        .status()
-        .do()
-        .then(({ lastRound }) => {
-          if (!this.shared.latest || lastRound >= this.shared.latest.round) this.shared.latest = { round: lastRound, at: Date.now() }
-          return lastRound
-        })
+      const read = traced(
+        this.ghost.debug,
+        "status",
+        { atLeast: atLeast > 0n ? atLeast : undefined },
+        () => this.algorand.client.algod.status().do(),
+        ({ lastRound }) => `latest=${lastRound}`,
+      ).then(({ lastRound }) => {
+        if (!this.shared.latest || lastRound >= this.shared.latest.round)
+          this.shared.latest = { round: lastRound, at: Date.now() }
+        return lastRound
+      })
       const clear = () => {
         if (this.shared.statusRead === read) this.shared.statusRead = undefined
       }
@@ -1115,7 +1248,8 @@ export class RetiGhostSDK {
    */
   private async queriesBoxes(signal?: AbortSignal): Promise<boolean> {
     const { backend } = this.ghost
-    const queries = backend === "auto" || backend === "query" || (typeof backend === "object" && backend.name === "query")
+    const queries =
+      backend === "auto" || backend === "query" || (typeof backend === "object" && backend.name === "query")
     if (!queries) return false
     const node = await raceAbort(this.getNode(), signal)
     return node.kind === "dt" && node.query !== undefined
@@ -1125,22 +1259,35 @@ export class RetiGhostSDK {
    * Pools' stakers at a planned round: one query through the query reader where the node has queries, falling back to
    * REST box reads if the query fails; one REST read per pool elsewhere.
    */
-  private async readPoolStakers(pools: bigint[], round: bigint | undefined, signal?: AbortSignal): Promise<Map<bigint, PoolStaker[]>> {
+  private async readPoolStakers(
+    pools: bigint[],
+    round: bigint | undefined,
+    signal?: AbortSignal,
+  ): Promise<Map<bigint, PoolStaker[]>> {
     if (pools.length > 0 && (await this.queriesBoxes(signal))) {
       try {
         return await this.queryPoolStakers(pools, round, signal)
       } catch (e) {
         signal?.throwIfAborted()
-        if (this.ghost.debug) console.warn(`[reti-ghost-sdk] stakers query failed (${(e as Error)?.message}); reading the boxes one by one`)
+        if (this.ghost.debug)
+          console.warn(`[reti-ghost-sdk] stakers query failed (${(e as Error)?.message}); reading the boxes one by one`)
       }
     }
-    const lists = await pMap(pools, (pool) => this.restPoolStakers(pool, round, signal), { concurrency: REST_STAKERS_CONCURRENCY })
+    const lists = await pMap(pools, (pool) => this.restPoolStakers(pool, round, signal), {
+      concurrency: REST_STAKERS_CONCURRENCY,
+    })
     return new Map(pools.map((pool, i) => [pool, lists[i]]))
   }
 
-  private async queryPoolStakers(pools: bigint[], round: bigint | undefined, signal?: AbortSignal): Promise<Map<bigint, PoolStaker[]>> {
+  private async queryPoolStakers(
+    pools: bigint[],
+    round: bigint | undefined,
+    signal?: AbortSignal,
+  ): Promise<Map<bigint, PoolStaker[]>> {
     const reader = round === undefined ? this.queryGhost : this.queryGhost.atRound(round)
-    const entries = await abortable(signal, () => reader.getPoolStakers({ methodArgsOrArgsArray: { pools }, ...sim({ signal }) }))
+    const entries = await abortable(signal, () =>
+      reader.getPoolStakers({ methodArgsOrArgsArray: { pools }, ...sim({ signal }) }),
+    )
     const byPool = new Map<bigint, PoolStaker[]>(pools.map((pool) => [pool, []]))
     for (const { poolAppId, slot, info } of entries) {
       byPool.get(poolAppId)?.push({
@@ -1156,16 +1303,28 @@ export class RetiGhostSDK {
   }
 
   /** A pool's `stakers` box by REST, decoded; empty if the pool or the box doesn't exist. */
-  private async restPoolStakers(poolAppId: bigint, round: bigint | undefined, signal?: AbortSignal): Promise<PoolStaker[]> {
+  private async restPoolStakers(
+    poolAppId: bigint,
+    round: bigint | undefined,
+    signal?: AbortSignal,
+  ): Promise<PoolStaker[]> {
     try {
-      const box = await this.algorand.app.getBoxValue(poolAppId, "stakers", {
-        ...(round !== undefined ? { round } : {}),
-        ...(signal ? { signal } : {}),
-      })
+      const box = await traced(
+        this.ghost.debug,
+        "stakers-box",
+        { pool: poolAppId, round },
+        () =>
+          this.algorand.app.getBoxValue(poolAppId, "stakers", {
+            ...(round !== undefined ? { round } : {}),
+            ...(signal ? { signal } : {}),
+          }),
+        (box) => `${box.length} bytes`,
+      )
       return decodeStakersBox(box)
     } catch (e) {
       signal?.throwIfAborted()
-      if ((e as { status?: number })?.status === 404 || /not found|does not exist/i.test(String((e as Error)?.message))) return []
+      if ((e as { status?: number })?.status === 404 || /not found|does not exist/i.test(String((e as Error)?.message)))
+        return []
       throw e
     }
   }

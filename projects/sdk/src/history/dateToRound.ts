@@ -1,5 +1,6 @@
 import type { AlgorandClient } from "@algorandfoundation/algokit-utils"
 import { raceAbort } from "../abort.js"
+import { traced } from "../utils/trace.js"
 
 /** A round and its block's timestamp, in seconds since the epoch. */
 export type RoundTime = { round: bigint; timestamp: number }
@@ -31,18 +32,29 @@ const WINDOW = 3n
 export class RoundClock {
   private headers = new Map<bigint, Promise<number>>()
 
-  constructor(private algorand: AlgorandClient) {}
+  /** @param debug Log each header and status read */
+  constructor(
+    private algorand: AlgorandClient,
+    private debug = false,
+  ) {}
 
   /** The timestamp of a round's block, in seconds since the epoch. */
   timestampOf(round: number | bigint): Promise<number> {
     const r = BigInt(round)
     let ts = this.headers.get(r)
     if (!ts) {
-      ts = this.algorand.client.algod
-        .block(r)
-        .headerOnly(true)
-        .do()
-        .then(({ block }) => Number(block.header.timestamp))
+      ts = traced(
+        this.debug,
+        "block-header",
+        { round: r },
+        () =>
+          this.algorand.client.algod
+            .block(r)
+            .headerOnly(true)
+            .do()
+            .then(({ block }) => Number(block.header.timestamp)),
+        (timestamp) => `ts=${new Date(timestamp * 1000).toISOString()}`,
+      )
       ts.catch(() => this.headers.delete(r))
       this.headers.set(r, ts)
     }
@@ -57,7 +69,13 @@ export class RoundClock {
 
   /** The node's latest round and its timestamp. The status read is this call's own, so `signal` cancels it. */
   async latest({ signal }: { signal?: AbortSignal } = {}): Promise<RoundTime> {
-    const { lastRound } = await this.algorand.client.algod.status().do(undefined, signal ? { signal } : undefined)
+    const { lastRound } = await traced(
+      this.debug,
+      "status",
+      {},
+      () => this.algorand.client.algod.status().do(undefined, signal ? { signal } : undefined),
+      ({ lastRound }) => `latest=${lastRound}`,
+    )
     return { round: lastRound, timestamp: await raceAbort(this.timestampOf(lastRound), signal) }
   }
 
@@ -89,7 +107,9 @@ export class RoundClock {
     let loTs = await probe(lo)
     if (target < loTs) {
       if (clamp) return { round: lo, timestamp: loTs }
-      throw new RangeError(`${new Date(target * 1000).toISOString()} is before round ${lo} (${new Date(loTs * 1000).toISOString()})`)
+      throw new RangeError(
+        `${new Date(target * 1000).toISOString()} is before round ${lo} (${new Date(loTs * 1000).toISOString()})`,
+      )
     }
     // invariant: ts(lo) <= target < ts(hi)
     let hi = latest.round
@@ -111,7 +131,9 @@ export class RoundClock {
     while (hi - lo > 1n) {
       if (probes >= MAX_PROBES) throw new Error(`roundAt: no round found for ${target} in ${MAX_PROBES} header reads`)
       let estimate =
-        last.ts !== prev.ts ? last.round + ((last.round - prev.round) * BigInt(target - last.ts)) / BigInt(last.ts - prev.ts) : -1n
+        last.ts !== prev.ts
+          ? last.round + ((last.round - prev.round) * BigInt(target - last.ts)) / BigInt(last.ts - prev.ts)
+          : -1n
       if (estimate <= lo || estimate >= hi) estimate = lo + (hi - lo) / 2n
       const step = estimate > last.round ? estimate - last.round : last.round - estimate
       if (hi - lo <= WINDOW * 2n || step <= WINDOW) {
