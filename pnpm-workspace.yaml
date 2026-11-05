@@ -4,9 +4,9 @@ linkWorkspacePackages: true
 onlyBuiltDependencies:
   - '@algorandfoundation/puya-ts'
   - esbuild
-# dtalgorand forks from npm, pinned exactly: one copy of each everywhere
+# dtalgorand dt5 forks from npm, pinned exactly: one copy of each everywhere
 overrides:
-  algosdk: npm:dt-algosdk@3.9.0-dt.4.1.0.0
-  '@algorandfoundation/algokit-utils': npm:@d13co/dt-algokit-utils@9.2.3-dt.4.1.0.0
+  algosdk: npm:dt-algosdk@3.9.0-dt.5.2.0.0
+  '@algorandfoundation/algokit-utils': npm:@d13co/dt-algokit-utils@9.2.3-dt.5.2.0.0
   # puya-ts 1.3 (AVM 13, for the query reader) compiles with algokit-utils 10; only the compiler gets it
   '@algorandfoundation/puya-ts>@algorandfoundation/algokit-utils': ^10.0.0-beta.3

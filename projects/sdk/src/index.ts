@@ -229,8 +229,8 @@ export type RetiGhostSDKParams = {
    */
   debug?: boolean
   /**
-   * How long `getPoolStakers` waits for other calls at the same round to be read with it (default 10 ms): on a node
-   * with queries, a page that reads each pool's stakers on its own sends one request per round.
+   * How long `getPoolStakers` and `getAssets` wait for other calls at the same round to be read with them (default
+   * 10 ms): a page that reads each pool's stakers, or each asset, on its own sends one request per round.
    */
   batchWindowMs?: number
 }
@@ -301,6 +301,8 @@ export class RetiGhostSDK {
     validatorCount?: number
     /** `getPoolStakers` calls made around the same time, by round, read in one query */
     stakers: RoundBatcher<bigint, PoolStaker[]>
+    /** `getAssets` calls made around the same time, by round, read in one request */
+    assets: RoundBatcher<bigint, AssetInfo>
   }
 
   constructor({
@@ -325,6 +327,7 @@ export class RetiGhostSDK {
     this.queryGhost = new RetiQueryReaderSDK({ ...params, backend: "query" })
     this.shared = {
       stakers: new RoundBatcher((pools, round, signal) => this.readPoolStakers(pools, round, signal), batchWindowMs),
+      assets: new RoundBatcher((assetIds, round, signal) => this.readAssets(assetIds, round, signal), batchWindowMs),
     }
   }
 
@@ -366,13 +369,16 @@ export class RetiGhostSDK {
   }
 
   /**
-   * The most rounds the node simulates in one request, which bounds what one `getTimestampsAtRounds` request covers
-   * (more are split across requests). 0 if it simulates one round per request: stock algod, or a dtalgorand node with
-   * multi-round simulate off. On a node with queries, requests cover `getNode().query.maxRounds` rounds each (16 on the local MainNet node) and run in parallel;
-   * one call takes any number of rounds either way.
+   * The most rounds one request reads, which bounds what one `getTimestampsAtRounds` request covers (more are split
+   * across requests, run in parallel): when reads go through queries, `getNode().query.maxRounds` (16 on the local
+   * MainNet node). 0 otherwise, where every round is its own simulate request: stock algod, a node without queries
+   * (dtalgorand's simulate reads one round since dt5), or a forced `dt` or `stock` backend. One call takes any number of
+   * rounds either way.
    */
   async getMaxRounds(): Promise<number> {
-    return (await this.getNode()).limits.maxRounds
+    if (!(await this.queriesBoxes())) return 0
+    const node = await this.getNode()
+    return node.kind === "dt" ? (node.query?.maxRounds ?? 0) : 0
   }
 
   /**
@@ -653,25 +659,14 @@ export class RetiGhostSDK {
   // ---------------------------------------------------------------------------------------------------------------
   // Assets and blocks
 
-  /** Each asset's basic params, or `deleted: true` if it doesn't exist, in input order. */
+  /**
+   * Each asset's basic params, or `deleted: true` if it doesn't exist, in input order. Calls made within
+   * `batchWindowMs` of each other at the same round are read together, in one request.
+   */
   async getAssets(assetIds: (number | bigint)[], options: ReadOptions = {}): Promise<AssetInfo[]> {
-    const data = await this.read(options, (r) =>
-      r.getAssets({ methodArgsOrArgsArray: { assetIds: assetIds.map(BigInt) }, ...sim(options) }),
-    )
-    return data.map((asset): AssetInfo =>
-      asset.creator === ALGORAND_ZERO_ADDRESS_STRING
-        ? { index: asset.assetId, deleted: true }
-        : {
-            index: asset.assetId,
-            params: {
-              creator: asset.creator,
-              total: asset.total,
-              decimals: asset.decimals,
-              unitName: asset.unitName,
-              name: asset.name,
-            },
-          },
-    )
+    if (assetIds.length === 0) return []
+    const round = await this.roundFor(options)
+    return Promise.all(assetIds.map((id) => this.shared.assets.load(BigInt(id), round, options.signal)))
   }
 
   /**
@@ -687,9 +682,9 @@ export class RetiGhostSDK {
   }
 
   /**
-   * Each round's block timestamp, from one request (query or simulate) per `max-rounds` rounds on a dtalgorand node
-   * (rounds any distance apart). Rounds are deduplicated and sorted; a round that can't be read is `ok: false`. The
-   * timestamps are cached in `clock`.
+   * Each round's block timestamp, from one query per `max-rounds` rounds on a node with queries, else one simulate per
+   * round (rounds any distance apart). Rounds are deduplicated and sorted; a round that can't be read is `ok: false`,
+   * and a round past the node's latest is `ok: false` with a `FutureRoundError`. The timestamps are cached in `clock`.
    */
   async getTimestampsAtRounds(
     rounds: (number | bigint)[],
@@ -697,21 +692,34 @@ export class RetiGhostSDK {
   ): Promise<SeriesPoint<number>[]> {
     const list = seriesRounds(rounds, Infinity)
     if (list.length === 0) return []
-    const results = await abortable(options.signal, () =>
-      this.ghost.atRounds(
-        list,
-        (s) => s.getRoundTimestamp({ methodArgsOrArgsArray: {}, extraMethodCallArgs: MIN_FEE }),
-        simOptions(options),
-      ),
-    )
+    // through simulate, a round the node doesn't have yet gets an HTTP 500 that's retried for ~14 s (a query fails it
+    // at once), so rounds past the latest are left out of the read
+    let last: bigint | undefined
+    if (!(await this.queriesBoxes(options.signal))) {
+      last = await raceAbort(this.latestRound(list[list.length - 1], Infinity), options.signal)
+    }
+    const readable = last === undefined ? list : list.filter((r) => r <= last)
+    const results =
+      readable.length === 0
+        ? []
+        : await abortable(options.signal, () =>
+            this.ghost.atRounds(
+              readable,
+              (s) => s.getRoundTimestamp({ methodArgsOrArgsArray: {}, extraMethodCallArgs: MIN_FEE }),
+              simOptions(options),
+            ),
+          )
     // the reader rejects with the reason itself since ghostkit 0.1.0-dt.3; a guard in case an abort still shows as failed rounds
     options.signal?.throwIfAborted()
-    return results.map((r): SeriesPoint<number> => {
+    const points = results.map((r): SeriesPoint<number> => {
       if (!r.ok) return { round: r.round, ok: false, error: r.error }
       const timestamp = Number(r.value[0])
       this.clock.remember(r.round, timestamp)
       return { round: r.round, ok: true, value: timestamp, timestamp }
     })
+    for (const round of list.slice(readable.length))
+      points.push({ round, ok: false, error: new FutureRoundError(round, last!) })
+    return points
   }
 
   /**
@@ -719,8 +727,9 @@ export class RetiGhostSDK {
    * request, query or simulate (at `start + 1000`, or the latest round if that's sooner). Undefined if no round in that
    * span reaches `target`, or `start` is past the latest round. The result is cached in `clock`.
    *
-   * On a dtalgorand node that reads several rounds per request, the node's status is read only when `start + 1000`
-   * (or `knownRound`) turns out not to exist yet.
+   * Through simulate, a read at a round the node doesn't have yet is retried for ~14 s before it fails (a query fails it
+   * at once), so without queries the node's status is read first, unless `knownRound` is given or an earlier status read
+   * already covers the whole span.
    *
    * @param target A `Date`, or seconds since the epoch
    * @param options.knownRound A round the caller knows the node has, such as the latest it has seen: the scan stops
@@ -739,20 +748,17 @@ export class RetiGhostSDK {
     const end = from + BLOCK_LOOKBACK
     const known = knownRound !== undefined ? BigInt(knownRound) : undefined
 
-    const node = await raceAbort(this.getNode(), signal)
+    // through simulate, a round the node doesn't have yet gets an HTTP 500, which is retried for ~14 s (a query fails it
+    // at once), so the scan only guesses a round the node is known to have, or any round when reads go through queries
+    const cached = this.shared.latest?.round
+    const guess =
+      known !== undefined && known >= from
+        ? known
+        : (cached !== undefined && cached >= end) || (await this.queriesBoxes(signal))
+          ? end
+          : undefined
     const scanAt = (at: bigint) =>
       abortable(signal, async () => {
-        if (node.limits.maxRounds > 0) {
-          // a request for several rounds fails a missing round in its own result; a single-round request gets an HTTP
-          // 500, which algokit-utils retries for ~14 s
-          const [result] = await this.ghost.atRounds(
-            [at],
-            (s) => s.firstRoundAtOrAfter({ methodArgsOrArgsArray: args, extraMethodCallArgs: MIN_FEE }),
-            simOptions({ signal }),
-          )
-          if (!result.ok) throw result.error
-          return result.value[0]
-        }
         const [found] = await this.ghost
           .atRound(at)
           .firstRoundAtOrAfter({ methodArgsOrArgsArray: args, extraMethodCallArgs: MIN_FEE, ...sim({ signal }) })
@@ -761,8 +767,8 @@ export class RetiGhostSDK {
     const latest = () => raceAbort(this.latestRound(0n, 0), signal)
 
     let found: [bigint, bigint]
-    if (node.limits.maxRounds > 0 || (known !== undefined && known >= from)) {
-      const first = known !== undefined && known >= from && known < end ? known : end
+    if (guess !== undefined) {
+      const first = guess < end ? guess : end
       try {
         found = await scanAt(first)
       } catch (e) {
@@ -851,8 +857,8 @@ export class RetiGhostSDK {
   }
 
   /**
-   * Every position of each staker at each round: one request (query or simulate) per `max-rounds` rounds on a
-   * dtalgorand node. Each point carries its round's block timestamp, also cached in `clock`.
+   * Every position of each staker at each round: one query per `max-rounds` rounds on a node with queries, else one
+   * simulate per round. Each point carries its round's block timestamp, also cached in `clock`.
    */
   async getStakerPositionsSeries(
     stakers: string[],
@@ -975,8 +981,8 @@ export class RetiGhostSDK {
   }
 
   /**
-   * Each validator's totals at each round: one request (query or simulate) per `max-rounds` rounds on a dtalgorand
-   * node. Each point carries its round's block timestamp, also cached in `clock`. See `seriesAt` for rounds that fail.
+   * Each validator's totals at each round: one query per `max-rounds` rounds on a node with queries, else one simulate
+   * per round. Each point carries its round's block timestamp, also cached in `clock`. See `seriesAt` for rounds that fail.
    */
   async getValidatorTotalsSeries(
     validatorIds: (number | bigint)[],
@@ -993,7 +999,8 @@ export class RetiGhostSDK {
   }
 
   /**
-   * Each pool's totals at each round: one request (query or simulate) per `max-rounds` rounds on a dtalgorand node.
+   * Each pool's totals at each round: one query per `max-rounds` rounds on a node with queries, else one simulate per
+   * round.
    * Each point carries its round's block timestamp, also cached in `clock`.
    */
   async getPoolTotalsSeries(
@@ -1007,8 +1014,8 @@ export class RetiGhostSDK {
   }
 
   /**
-   * The registry's totals at each round: one request (query or simulate) per `max-rounds` rounds on a dtalgorand
-   * node. Each point carries its round's block timestamp, also cached in `clock`.
+   * The registry's totals at each round: one query per `max-rounds` rounds on a node with queries, else one simulate
+   * per round. Each point carries its round's block timestamp, also cached in `clock`.
    */
   async getRegistryTotalsSeries(
     rounds: SeriesRounds,
@@ -1300,6 +1307,40 @@ export class RetiGhostSDK {
       })
     }
     return byPool
+  }
+
+  /** Assets' params at a planned round, in one request (the reader chunks long lists itself). */
+  private async readAssets(
+    assetIds: bigint[],
+    round: bigint | undefined,
+    signal?: AbortSignal,
+  ): Promise<Map<bigint, AssetInfo>> {
+    const reader = round === undefined ? this.baseSDK : this.ghost.atRound(round)
+    const data = await abortable(signal, () =>
+      reader.getAssets({ methodArgsOrArgsArray: { assetIds }, ...sim({ signal }) }),
+    )
+    if (data.length !== assetIds.length)
+      throw new Error(`getAssets returned ${data.length} assets for ${assetIds.length} ids`)
+    return new Map(
+      assetIds.map((id, i): [bigint, AssetInfo] => {
+        const asset = data[i]
+        return [
+          id,
+          asset.creator === ALGORAND_ZERO_ADDRESS_STRING
+            ? { index: id, deleted: true }
+            : {
+                index: id,
+                params: {
+                  creator: asset.creator,
+                  total: asset.total,
+                  decimals: asset.decimals,
+                  unitName: asset.unitName,
+                  name: asset.name,
+                },
+              },
+        ]
+      }),
+    )
   }
 
   /** A pool's `stakers` box by REST, decoded; empty if the pool or the box doesn't exist. */

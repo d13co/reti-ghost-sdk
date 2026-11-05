@@ -1,6 +1,6 @@
 {
   "name": "reti-ghost-sdk",
-  "version": "0.3.0-dt.13",
+  "version": "0.3.0-dt.17",
   "description": "Read-only SDK for the Reti staking registry, with reads at any past round on a dtalgorand node, through read-only queries when the node has them",
   "repository": {
     "type": "git",
@@ -60,9 +60,9 @@
     "algosdk": ">=3.5.2"
   },
   "devDependencies": {
-    "@algorandfoundation/algokit-utils": "npm:@d13co/dt-algokit-utils@9.2.3-dt.4.1.0.0",
+    "@algorandfoundation/algokit-utils": "npm:@d13co/dt-algokit-utils@9.2.3-dt.5.2.0.0",
     "@types/node": "^25.0.3",
-    "algosdk": "npm:dt-algosdk@3.9.0-dt.4.1.0.0",
+    "algosdk": "npm:dt-algosdk@3.9.0-dt.5.2.0.0",
     "tsx": "^4.21.0",
     "typescript": "^5.7.3",
     "vitest": "3.2.4"

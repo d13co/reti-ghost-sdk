@@ -485,7 +485,7 @@
                 ]
             },
             "readonly": true,
-            "desc": "Each validator's config, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`",
+            "desc": "Each validator's config, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=119`",
             "events": [],
             "recommendations": {}
         },
@@ -514,7 +514,7 @@
                 ]
             },
             "readonly": true,
-            "desc": "Each validator's current state, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`",
+            "desc": "Each validator's current state, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=119`",
             "events": [],
             "recommendations": {}
         },
@@ -543,7 +543,7 @@
                 ]
             },
             "readonly": true,
-            "desc": "Each validator's pools: one entry per pool, tagged with its validator id. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`",
+            "desc": "Each validator's pools: one entry per pool, tagged with its validator id. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=119`",
             "events": [],
             "recommendations": {}
         },
@@ -572,7 +572,7 @@
                 ]
             },
             "readonly": true,
-            "desc": "Each validator's node to pool assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`",
+            "desc": "Each validator's node to pool assignments, in order. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=119`",
             "events": [],
             "recommendations": {}
         },
@@ -799,7 +799,7 @@
                 ]
             },
             "readonly": true,
-            "desc": "Every position of each staker: one entry per pool the staker is in, stakers in order. `@ghostkit-chunk stakers refsPerItem=48 maxPerTxn=8 maxPerGroup=16`",
+            "desc": "Every position of each staker: one entry per pool the staker is in, stakers in order. `@ghostkit-chunk stakers refsPerItem=128`",
             "events": [],
             "recommendations": {}
         },
@@ -878,7 +878,7 @@
                 ]
             },
             "readonly": true,
-            "desc": "Each validator's pool count, stakers and stake, in order: a small read for charts. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=127`",
+            "desc": "Each validator's pool count, stakers and stake, in order: a small read for charts. `@ghostkit-chunk validatorIds refsPerItem=1 maxPerGroup=119`",
             "events": [],
             "recommendations": {}
         },
