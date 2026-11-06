@@ -169,4 +169,4 @@ cython_debug/
 node_modules
 
 .npmrc
-claude/
+.claude/
