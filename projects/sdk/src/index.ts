@@ -683,8 +683,9 @@ export class RetiGhostSDK {
 
   /**
    * Each round's block timestamp, from one query per `max-rounds` rounds on a node with queries, else one simulate per
-   * round (rounds any distance apart). Rounds are deduplicated and sorted; a round that can't be read is `ok: false`,
-   * and a round past the node's latest is `ok: false` with a `FutureRoundError`. The timestamps are cached in `clock`.
+   * round (rounds any distance apart). Rounds are deduplicated and sorted; a round that can't be read is `ok: false`:
+   * with a `FutureRoundError` past the node's latest round, and on a node without time travel with a
+   * `TimeTravelUnavailableError` more than 20 rounds before it. The timestamps are cached in `clock`.
    */
   async getTimestampsAtRounds(
     rounds: (number | bigint)[],
@@ -693,12 +694,20 @@ export class RetiGhostSDK {
     const list = seriesRounds(rounds, Infinity)
     if (list.length === 0) return []
     // through simulate, a round the node doesn't have yet gets an HTTP 500 that's retried for ~14 s (a query fails it
-    // at once), so rounds past the latest are left out of the read
-    let last: bigint | undefined
-    if (!(await this.queriesBoxes(options.signal))) {
-      last = await raceAbort(this.latestRound(list[list.length - 1], Infinity), options.signal)
+    // at once), and a node without time travel only simulates recent rounds: those rounds are answered without a read
+    const stock = await this.stockLimits(options.signal)
+    const last =
+      stock?.last ??
+      ((await this.queriesBoxes(options.signal))
+        ? undefined
+        : await raceAbort(this.latestRound(list[list.length - 1], Infinity), options.signal))
+    const unreadable = (round: bigint): Error | undefined => {
+      if (last !== undefined && round > last) return new FutureRoundError(round, last)
+      if (stock && round < stock.last - STOCK_ROUND_SLACK)
+        return new TimeTravelUnavailableError(round, stock.last, stock.reason)
+      return undefined
     }
-    const readable = last === undefined ? list : list.filter((r) => r <= last)
+    const readable = list.filter((round) => !unreadable(round))
     const results =
       readable.length === 0
         ? []
@@ -711,15 +720,17 @@ export class RetiGhostSDK {
           )
     // the reader rejects with the reason itself since ghostkit 0.1.0-dt.3; a guard in case an abort still shows as failed rounds
     options.signal?.throwIfAborted()
-    const points = results.map((r): SeriesPoint<number> => {
-      if (!r.ok) return { round: r.round, ok: false, error: r.error }
+    const read = new Map(results.map((r) => [r.round, r]))
+    return list.map((round): SeriesPoint<number> => {
+      const error = unreadable(round)
+      if (error) return { round, ok: false, error }
+      const r = read.get(round)
+      if (!r) return { round, ok: false, error: new Error(`getTimestampsAtRounds: no result for round ${round}`) }
+      if (!r.ok) return { round, ok: false, error: r.error }
       const timestamp = Number(r.value[0])
-      this.clock.remember(r.round, timestamp)
-      return { round: r.round, ok: true, value: timestamp, timestamp }
+      this.clock.remember(round, timestamp)
+      return { round, ok: true, value: timestamp, timestamp }
     })
-    for (const round of list.slice(readable.length))
-      points.push({ round, ok: false, error: new FutureRoundError(round, last!) })
-    return points
   }
 
   /**
@@ -729,7 +740,8 @@ export class RetiGhostSDK {
    *
    * Through simulate, a read at a round the node doesn't have yet is retried for ~14 s before it fails (a query fails it
    * at once), so without queries the node's status is read first, unless `knownRound` is given or an earlier status read
-   * already covers the whole span.
+   * already covers the whole span. A node without time travel scans at its latest round, so there `start` must be
+   * within about 1,000 rounds of it, else this throws `TimeTravelUnavailableError`.
    *
    * @param target A `Date`, or seconds since the epoch
    * @param options.knownRound A round the caller knows the node has, such as the latest it has seen: the scan stops
@@ -767,7 +779,15 @@ export class RetiGhostSDK {
     const latest = () => raceAbort(this.latestRound(0n, 0), signal)
 
     let found: [bigint, bigint]
-    if (guess !== undefined) {
+    const stock = await this.stockLimits(signal)
+    if (stock) {
+      // a node without time travel simulates only recent rounds, and a program reads block headers up to 1,000 rounds
+      // back, so the span has to reach the latest round
+      if (from > stock.last) return undefined
+      const at = end < stock.last ? end : stock.last
+      if (at < stock.last - STOCK_ROUND_SLACK) throw new TimeTravelUnavailableError(at, stock.last, stock.reason)
+      found = await scanAt(at)
+    } else if (guess !== undefined) {
       const first = guess < end ? guess : end
       try {
         found = await scanAt(first)
@@ -1247,6 +1267,17 @@ export class RetiGhostSDK {
       this.shared.statusRead = read
     }
     return this.shared.statusRead
+  }
+
+  /**
+   * On a node without time travel, which only reads recent rounds: its latest round (fresh) and why older rounds can't
+   * be read. Undefined on a node with time travel.
+   */
+  private async stockLimits(signal?: AbortSignal): Promise<{ last: bigint; reason: string } | undefined> {
+    const node = await raceAbort(this.getNode(), signal)
+    if (node.kind === "dt" && node.limits.timeTravel) return undefined
+    const last = await raceAbort(this.latestRound(0n, STATUS_MAX_AGE_MS), signal)
+    return { last, reason: node.kind === "stock" ? node.reason : "time travel is off" }
   }
 
   /**
