@@ -13,11 +13,13 @@ Reads at the latest round still work against any algod.
 
 ## Install
 
-This is a prerelease line, published under the npm dist-tag `dt` (the stable SDK is `latest`, 0.2.x, from `main`):
+This is a prerelease line, released to npm under the `beta` dist-tag (the stable SDK is `latest`, 0.2.x, from `main`):
 
 ```sh
-npm install reti-ghost-sdk@dt
+npm install reti-ghost-sdk@beta
 ```
+
+Versions are `0.3.0-dt.N`; pin one exactly to stay on it.
 
 Reads at past rounds need the dtalgorand forks of algosdk and algokit-utils, `dt-algosdk` and `@d13co/dt-algokit-utils` on npm. Install both under the stock names, pinned exactly, and override them everywhere in your app, so that exactly one copy of each loads (your code, this SDK and any wallet library must share them):
 
@@ -88,6 +90,7 @@ Every read takes a trailing `{ round }`, or pin a round for all reads with `sdk.
 - On a node without time travel, which can only read the latest state, a round within 20 of the latest (about a minute) reads the latest state, so a round taken from `status()` keeps working. An older round throws `TimeTravelUnavailableError`.
 - The SDK reads the node's status only for a round past the latest it has seen, or, without time travel, at most once a second.
 - Validators, pools and assets that don't exist yet at the round read as zeros (`exists: false` for pools, `deleted: true` for assets) instead of failing.
+- Past-round reads cost about the same as latest ones. Measured from Node.js on a local MainNet node, with queries / with the extended simulate: `getValidators` for all 227 validators 40–46 / 64–107 ms, `getValidatorConfig` 227 21–23 / 34–53 ms, `getPoolStates` for 286 pools 30–58 / 44–78 ms, `getStakerPositions` for 50 stakers 9–17 / 21–59 ms, `getBlockTimestamps(1000)` 10–39 / 12–65 ms, small reads (MBR, assets, 50 balances) 3–8 / 4–51 ms.
 
 ### Aborting reads
 
@@ -96,7 +99,6 @@ Every read also takes a `signal` (an `AbortSignal`): `{ round, signal }` for rea
 - With the dtalgorand fork of algokit-utils, the read's HTTP requests are cancelled and not retried, queries and simulates alike. With stock algokit-utils the read still rejects on abort, but its requests run to the end.
 - Reads other calls share (node detection, the registry's creation round, the node's status, cached block headers) aren't cancelled: the aborted read stops waiting for them, and they carry on for the others.
 - On a stock node, `composer.simulate` can't pass the signal to fetch, so its simulate runs to the end; the read still rejects with the reason at once.
-- Past-round reads cost about the same as latest ones. Measured from Node.js on a local MainNet node, with queries / with the extended simulate: `getValidators` for all 227 validators 40–46 / 64–107 ms, `getValidatorConfig` 227 21–23 / 34–53 ms, `getPoolStates` for 286 pools 30–58 / 44–78 ms, `getStakerPositions` for 50 stakers 9–17 / 21–59 ms, `getBlockTimestamps(1000)` 10–39 / 12–65 ms, small reads (MBR, assets, 50 balances) 3–8 / 4–51 ms.
 
 
 ## API Overview
@@ -154,7 +156,7 @@ Two reads let an app do the search itself with fewer requests, e.g. against its 
 - `getTimestampsAtRounds(rounds)`: the block timestamps of any rounds, from one query per `max-rounds` rounds (16 on the local MainNet node, in parallel), or one simulate per round on a node without queries, each `{ round, ok, value }` like a series point. A round past the latest is a `FutureRoundError`, and on a node without time travel a round more than 20 before the latest a `TimeTravelUnavailableError`, both without a read.
 - `firstRoundAtOrAfter(start, target, { knownRound? })`: the first round from `start` whose timestamp is at or after `target`, from one request (query or simulate) that scans up to 1,000 rounds. Undefined if none of them reaches it. Pass a `knownRound` the node has (e.g. the latest you've seen) to stop the scan there. Without one, and without queries, the node's status is read first (unless an earlier read already covers the span), since through simulate a read at a round past the node's tip is retried for ~14 s before it fails. On a node without time travel the scan runs at the latest round, so `start` must be within about 1,000 rounds of it (else `TimeTravelUnavailableError`).
 
-Both add what they read to `sdk.clock`. Measured from Node.js against a dtalgorand MainNet node, rounds spread over the registry's life: 16 timestamps in 57–107 ms (16 header reads 8 at a time: 54–207 ms), a full 1,000-round scan in 70–195 ms. On a local MainNet node, 16 timestamps take 7–8 ms with queries, 21–31 ms with the extended simulate.
+Both add what they read to `sdk.clock`. Measured from Node.js on a local MainNet dt5 node, rounds spread over the registry's life, with queries / through simulate (one request per round): 16 timestamps in 15–27 / 41–56 ms, a full 1,000-round scan in 42–61 / 50–58 ms.
 
 ### Change timeline
 
@@ -241,7 +243,10 @@ Ghost Mainnet App ID: 3374692547 **currently updatable by author.** It runs the 
 
 ## Limits and Known Issues
 
-- Chunking follows the node's `max-txn-groups`, the consensus limits on unnamed resources, and the AVM's 256 inner transactions per group: `getValidators` takes 64 validators per group, the other validator reads 119 (a stock node allows 16 × 8 unnamed references per group, and the registry app takes one, so 127 fit at today's protocol; at past rounds a dtalgorand node since dt5 simulates under the round's own protocol, and before consensus v41 (round 54,012,570), where a box reference gave 1,024 bytes of box reads instead of 2,048, only 119 fit, and `getStakerPositions` takes one staker per group and app call, as two stakers in 11 pools between them overflow a group's box quota there; queries run past rounds under the latest protocol, so this only affects simulate; at 256 per group, as before 0.3.0-dt.6, they failed on a stock node from validator 128 on); a dtalgorand node sends up to 16 groups per request. The chunks stay the same with queries, so a fallback to simulate needs no re-chunking; there each app call runs alone, with the node's per-call budget (`getNode().query.maxCallBudget`, 320,000 on the local MainNet node), and requests follow the query limits.
+- Chunking follows the node's `max-txn-groups`, the consensus limits on unnamed resources, and the AVM's 256 inner transactions per group. A dtalgorand node takes up to 16 groups per request.
+  - `getValidators` takes 64 validators per group, and the other validator reads 119. At today's protocol 127 would fit (a group gets 16 × 8 unnamed references, and the registry app takes one), but a dtalgorand node since dt5 simulates a past round under that round's protocol, and before consensus v41 (round 54,012,570) a box reference gave 1,024 bytes of box reads instead of 2,048, so only 119 fit there. Before 0.3.0-dt.6 they took 256 per group, which failed on a stock node from validator 128 on.
+  - `getStakerPositions` takes one staker per group: before v41, two stakers in 11 pools between them overflow a group's box quota.
+  - Queries run past rounds under the latest protocol, so the pre-v41 limits only affect simulate. The chunks stay the same with queries, so a fallback to simulate needs no re-chunking. In a query each app call runs alone, with the node's per-call budget (`getNode().query.maxCallBudget`, 320,000 on the local MainNet node), and requests follow the query limits.
 - A round past the node's tip (e.g. `getTimestampsAtRounds` or a series with future rounds) fails at once, as an `ok: false` point or a `FutureRoundError`: a query fails it itself, and through simulate (a node with queries off, or `backend: 'dt'` / `'stock'`) the SDK checks the node's latest round first, since the node answers a future round with a 500 that's retried for ~14 s.
 - A pool app that was deleted can't be read at rounds after that: the read fails ("app … does not exist"). A destroyed asset reads as `deleted: true`, and ids not created yet at a round are handled.
 - Retries come from algokit-utils' algod client. With the fork, a busy node's 503 is retried after at least 1 s; a 503 for history the node can't serve (e.g. untrusted history) and a 504 from a `/versions` listing (the node's time limit) are thrown at once, not after ~14 s of retries. On a 504 from `getChangeRounds` or another timeline read, narrow the range.
@@ -249,9 +254,10 @@ Ghost Mainnet App ID: 3374692547 **currently updatable by author.** It runs the 
 
 ## Development
 
-- Tests: `pnpm test` (vitest, `test/`): the staker history search against a simulated pool ledger, the leave payout batch, timeline targets, the algod version history mapping, the staker-list batcher, and batched asset reads.
+- Tests: `pnpm test` (vitest, `test/`): the staker history search against a simulated pool ledger, the leave payout batch, timeline targets, the algod version history mapping, the staker-list batcher, batched asset reads, and `getAllValidators` and `prefetch` against a mocked node.
 - Build: `algokit project run build` at the repo root, or `pnpm --filter smart_contracts build && pnpm --filter reti-ghost-sdk build`. The SDK build copies the generated reader clients (`RetiReader`, and the AVM 13 `RetiQueryReader`, compiled with puya-ts 1.3) from the contracts project into `src/generated/`.
-- Examples (`examples/`, run with `npx tsx`; point `DT_ALGOD_SERVER` at a dtalgorand MainNet node, and set `DT_ALGOD_TOKEN` if it needs one):
+- Examples (`examples/`, run with `npx tsx`). Most need a dtalgorand MainNet node: point `DT_ALGOD_SERVER` at it, and set `DT_ALGOD_TOKEN` if it needs one.
+  - `all-validators.ts [warm runs]`: `getAllValidators` (one batch) against `getNumValidators` + `getValidators`, at the latest round and over the registry's life: same validators, request counts and timings (`RTT=<ms>` stands in for a remote node)
   - `at-round.ts [round|latest]`: everything the UI reads, at a round
   - `date-to-round.ts [date]`, `timeline.ts [validatorId]`, `series.ts [points]`
   - `staker-history.ts <address> [validatorId]`: a staker's pools and deposits and withdrawals, with the search's progress
@@ -261,6 +267,7 @@ Ghost Mainnet App ID: 3374692547 **currently updatable by author.** It runs the 
   - `pool-stakers.ts [rounds]`: every pool's stakers through the query reader and through REST box reads, at the latest round and rounds over the registry's life, compared; also that separate `getPoolStakers` calls coalesce, with and without queries, and aborts. Last run: 129 to 286 pools per round in one query each, all equal to the REST reads; all 11 checks pass.
   - `stock.ts [upstream]`: the SDK on stock algod, through `stock-proxy.ts`, which makes a dtalgorand node look like stock algod (its dtalgorand endpoints answer 404, a `round` parameter 400, an old simulate round is refused). Checks detection, every latest-state read against the same read on the upstream directly, past, near and future rounds, Date → round, history and series, and that the SDK sent nothing stock algod refuses. The upstream defaults to Nodely's MainNet node, which runs dtalgorand (so `AlgorandClient.mainNet()` isn't stock); no `DT_ALGOD_SERVER` needed. `stock-proxy.ts [port] [upstream]` runs the proxy on its own. Last run: all 38 checks pass.
   - `query-vs-simulate.ts [points]`: the same reads through queries and through the extended simulate, every value compared, with timings and the requests each sent; on a node without queries, checks that reads fall back to simulate. Last run: all 74 checks pass with queries, 73 on the fallback.
+  - Against `AlgorandClient.mainNet()` (Nodely), latest state only, no `DT_ALGOD_SERVER`: `run.ts`, `single.ts`, `assets.ts`, `getMbrAndConstraints.ts`, `pool-balances.ts`, `pool-validators.ts`. `deployed.ts` reads through a deployed reader (`ghostAppId`) on TestNet.
 
 
 ## License

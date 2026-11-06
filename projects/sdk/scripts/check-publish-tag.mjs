@@ -1,11 +1,12 @@
-// Refuses to publish a prerelease (0.3.0-dt.N) as `latest`, which would replace the stable SDK
-// for everyone running `npm install reti-ghost-sdk`. Publish with `--tag dt`.
+// Refuses to publish a dt-line version (0.3.0-dt.N) under any dist-tag but `beta`: as `latest` it would replace the
+// stable SDK for everyone running `npm install reti-ghost-sdk`. Releases go through CI (see the repo README); this
+// guards a publish by hand.
 import { readFileSync } from "node:fs"
 
 const { version } = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"))
 const tag = process.env.npm_config_tag || "latest"
 
-if (version.includes("-") && tag === "latest") {
-  console.error(`reti-ghost-sdk ${version} is a prerelease: publish it with --tag dt, not as latest.`)
+if (version.includes("-") && tag !== "beta") {
+  console.error(`reti-ghost-sdk ${version} is a dt-line prerelease: publish it with --tag beta, not ${tag}.`)
   process.exit(1)
 }

@@ -31,7 +31,7 @@
     "dist/"
   ],
   "publishConfig": {
-    "tag": "dt"
+    "tag": "beta"
   },
   "scripts": {
     "prebuild": "cp ../contracts/smart_contracts/artifacts/reti_reader/RetiReaderSDK.ts ../contracts/smart_contracts/artifacts/reti_query_reader/RetiQueryReaderSDK.ts src/generated && node scripts/strip-app-spec-source.mjs src/generated/RetiReaderSDK.ts && node scripts/strip-app-spec-source.mjs src/generated/RetiQueryReaderSDK.ts",
