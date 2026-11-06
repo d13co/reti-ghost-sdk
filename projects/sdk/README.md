@@ -272,4 +272,4 @@ Ghost Mainnet App ID: 3374692547 **currently updatable by author.** It runs the 
 
 ## License
 
-ISC
+MIT, see [LICENSE](LICENSE).
