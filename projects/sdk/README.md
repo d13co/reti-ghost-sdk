@@ -192,4 +192,4 @@ pnpm -w --filter reti-ghost-sdk build
 
 ## License
 
-ISC
+MIT, see [LICENSE](LICENSE).
